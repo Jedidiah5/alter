@@ -11,15 +11,31 @@
  */
 export type A2UIOp = Record<string, unknown> & { version?: string };
 
+export type StageState = {
+  tension: number;
+  characters: Array<{
+    name: string;
+    animation: string;
+    emotion: string;
+    intensity: number;
+  }>;
+};
+
+export type SimScenario = "classroom_flood" | "robbery";
+
 type Snapshot = {
   surfaceId: string | null;
   ops: A2UIOp[];
+  stageState: StageState | null;
+  scenario: SimScenario | null;
 };
 
 type Listener = (snap: Snapshot) => void;
 
 const buffers = new Map<string, A2UIOp[]>();
 const surfaceIds = new Map<string, string | null>();
+const stageStates = new Map<string, StageState | null>();
+const scenarios = new Map<string, SimScenario | null>();
 const listeners = new Map<string, Set<Listener>>();
 
 function getSurfaceIdFromOp(op: A2UIOp): string | undefined {
@@ -30,6 +46,18 @@ function getSurfaceIdFromOp(op: A2UIOp): string | undefined {
   const ud = (op.updateDataModel as { surfaceId?: string } | undefined)
     ?.surfaceId;
   return cs ?? uc ?? ud;
+}
+
+function applyDataModel(channel: string, op: A2UIOp) {
+  const ud = op.updateDataModel as
+    | { value?: { stage?: StageState; scenario?: string } }
+    | undefined;
+  const value = ud?.value;
+  if (!value) return;
+  if (value.stage) stageStates.set(channel, value.stage);
+  if (value.scenario === "robbery" || value.scenario === "classroom_flood") {
+    scenarios.set(channel, value.scenario);
+  }
 }
 
 const DEBUG = typeof window !== "undefined";
@@ -49,6 +77,26 @@ function opSummary(op: A2UIOp): string {
   return `${kind}(${sid})`;
 }
 
+function latestFromOps(ops: A2UIOp[]): {
+  stageState: StageState | null;
+  scenario: SimScenario | null;
+} {
+  let stageState: StageState | null = null;
+  let scenario: SimScenario | null = null;
+  for (const op of ops) {
+    const ud = op.updateDataModel as
+      | { value?: { stage?: StageState; scenario?: string } }
+      | undefined;
+    const value = ud?.value;
+    if (!value) continue;
+    if (value.stage) stageState = value.stage;
+    if (value.scenario === "robbery" || value.scenario === "classroom_flood") {
+      scenario = value.scenario;
+    }
+  }
+  return { stageState, scenario };
+}
+
 export const surfaceBus = {
   push(channel: string, ops: A2UIOp[]) {
     const buf = buffers.get(channel) ?? [];
@@ -58,6 +106,7 @@ export const surfaceBus = {
     for (const op of ops) {
       const sid = getSurfaceIdFromOp(op);
       if (sid) surfaceIds.set(channel, sid);
+      applyDataModel(channel, op);
     }
     const subCount = listeners.get(channel)?.size ?? 0;
     if (DEBUG) {
@@ -73,15 +122,23 @@ export const surfaceBus = {
   reset(channel: string) {
     buffers.set(channel, []);
     surfaceIds.set(channel, null);
+    stageStates.set(channel, null);
+    scenarios.set(channel, null);
     if (DEBUG) console.log(`[surface-bus] reset channel=${channel}`);
     const snap = this.snapshot(channel);
     listeners.get(channel)?.forEach((fn) => fn(snap));
   },
 
   snapshot(channel: string): Snapshot {
+    const ops = buffers.get(channel) ?? [];
+    const cachedStage = stageStates.get(channel) ?? null;
+    const cachedScenario = scenarios.get(channel) ?? null;
+    const fromOps = latestFromOps(ops);
     return {
       surfaceId: surfaceIds.get(channel) ?? null,
-      ops: buffers.get(channel) ?? [],
+      ops,
+      stageState: cachedStage ?? fromOps.stageState,
+      scenario: cachedScenario ?? fromOps.scenario,
     };
   },
 

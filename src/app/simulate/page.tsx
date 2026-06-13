@@ -2,7 +2,7 @@
 
 import { CopilotChat, useAgent } from "@copilotkit/react-core/v2";
 import { SiteNav } from "@/components/Brand";
-import { SurfaceCanvas, CanvasEmptyState } from "@/components/SurfaceCanvas";
+import { SimulateCanvas } from "@/components/SimulateCanvas";
 import { FilteredUserMessage } from "@/components/FilteredUserMessage";
 import { FilteredAssistantMessage } from "@/components/FilteredAssistantMessage";
 import { Split } from "@/components/Split";
@@ -32,27 +32,38 @@ export default function SimulatePage() {
                 }}
                 labels={{
                   chatInputPlaceholder:
-                    "Describe two characters, then say “start”…",
+                    "Describe two characters + scenario, then say “start”…",
                   welcomeMessageText:
-                    "Describe two characters with names and personalities, then say “start”. Example: “Maya is an anxious teacher. Jordan is a calm leader. Start the classroom flood scenario.”",
+                    "Describe two characters with names and personalities, pick a scenario (classroom flood or robbery), then say “start”. Example: “Maya is an anxious teacher. Jordan is a calm leader. Start the classroom flood scenario.”",
                 }}
               />
             </div>
           </div>
         }
         right={
-          <SurfaceCanvas
+          <SimulateCanvas
             channel={AGENT_ID}
             emptyState={
-              <CanvasEmptyState
-                title="Simulation canvas is empty"
-                subtitle="Type character names and personalities in the chat, then say “start”. The agent will stream TensionMeter, PsycheCards, and ScenarioBeat surfaces here."
-                hint={
-                  <span className="mono text-[11px] uppercase tracking-[0.14em] text-[var(--ink)]">
-                    try: “Maya is anxious, Jordan is calm. Start.”
-                  </span>
-                }
-              />
+              <div className="flex flex-col items-center gap-3 text-white">
+                <div
+                  className="w-12 h-12 rounded-2xl flex items-center justify-center opacity-90"
+                  style={{ background: "linear-gradient(135deg, #4dd2ff, #4dabf7)" }}
+                  aria-hidden
+                >
+                  <span className="text-xl">◎</span>
+                </div>
+                <h2 className="text-[20px] font-semibold tracking-tight">
+                  Simulation stage ready
+                </h2>
+                <p className="text-[14px] text-white/75 leading-relaxed">
+                  Type character names and personalities, then say “start”. The 3D
+                  characters will move while psyche cards and the tension meter
+                  overlay this stage.
+                </p>
+                <span className="mono text-[11px] uppercase tracking-[0.14em] text-white/60 mt-1">
+                  try: “Maya is anxious, Jordan is calm. Start.”
+                </span>
+              </div>
             }
           />
         }

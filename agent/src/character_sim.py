@@ -221,7 +221,10 @@ def simulate_beat(
         operations=[
             a2ui.create_surface(SURFACE, catalog_id=CATALOG_ID),
             a2ui.update_components(SURFACE, components),
-            a2ui.update_data_model(SURFACE, {"stage": sim_to_stage_state(sim)}),
+            a2ui.update_data_model(SURFACE, {
+                "stage": sim_to_stage_state(sim),
+                "scenario": scenario,
+            }),
         ]
     )
 
