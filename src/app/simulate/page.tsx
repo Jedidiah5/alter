@@ -188,6 +188,10 @@ export default function SimulatePage() {
         />
       </div>
 
+      {/* Analog atmosphere — warm vignette + film grain over the 3D stage */}
+      <div className="sim-vignette" aria-hidden />
+      <div className="sim-grain" aria-hidden />
+
       {error && started && (
         <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-lg bg-red-900/80 text-white text-sm border border-red-500/40">
           {error}

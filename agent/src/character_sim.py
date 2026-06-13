@@ -166,18 +166,41 @@ Simulate the next beat."""
 
 
 def parse_sim(raw: str) -> dict[str, Any]:
-    """Defensive JSON parse — Gemini sometimes wraps in fences."""
+    """Defensive JSON parse.
+
+    Gemini frequently wraps the JSON in markdown fences or adds a sentence of
+    commentary before/after it. We strip fences, then fall back to extracting
+    the outermost {...} block so a stray word doesn't blank out the whole beat.
+    """
     cleaned = raw.replace("```json", "").replace("```", "").strip()
+
+    # 1) Straight parse.
     try:
         return json.loads(cleaned)
     except json.JSONDecodeError:
-        return {
-            "tension": 50,
-            "phase_label": "—",
-            "beat": {"headline": "…", "detail": "", "outcome": "neutral"},
-            "characters": [],
-            "offer_fork": False,
-        }
+        pass
+
+    # 2) Extract the outermost JSON object and parse that.
+    start = cleaned.find("{")
+    end = cleaned.rfind("}")
+    if start != -1 and end != -1 and end > start:
+        try:
+            return json.loads(cleaned[start : end + 1])
+        except json.JSONDecodeError:
+            pass
+
+    # 3) Give up — surface a visible parse-failure beat rather than silence.
+    return {
+        "tension": 50,
+        "phase_label": "Parse error",
+        "beat": {
+            "headline": "The simulation hiccuped",
+            "detail": "The AI's response wasn't valid JSON. Try the next beat again.",
+            "outcome": "neutral",
+        },
+        "characters": [],
+        "offer_fork": False,
+    }
 
 
 def _clamp(v: Any, lo: float, hi: float, default: float) -> float:

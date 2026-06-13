@@ -1,5 +1,10 @@
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans, Spline_Sans_Mono } from "next/font/google";
+import {
+  Plus_Jakarta_Sans,
+  Spline_Sans_Mono,
+  Righteous,
+  Space_Grotesk,
+} from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
 
@@ -11,6 +16,20 @@ const plusJakarta = Plus_Jakarta_Sans({
 
 const splineMono = Spline_Sans_Mono({
   variable: "--font-spline-mono",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+// Retro-futurism display + body pairing for the ALTER / simulate experience.
+const righteous = Righteous({
+  variable: "--font-display",
+  subsets: ["latin"],
+  weight: "400",
+  display: "swap",
+});
+
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-retro-body",
   subsets: ["latin"],
   display: "swap",
 });
@@ -27,7 +46,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${plusJakarta.variable} ${splineMono.variable} h-full antialiased`}
+      className={`${plusJakarta.variable} ${splineMono.variable} ${righteous.variable} ${spaceGrotesk.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <Providers>{children}</Providers>

@@ -19,7 +19,7 @@ import type { Scenario } from "@/components/CharacterStage";
 const CharacterStage = dynamic(() => import("@/components/CharacterStage"), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-full flex items-center justify-center bg-[#0a0a12] text-[var(--muted)] text-sm">
+    <div className="w-full h-full flex items-center justify-center bg-[#14100b] text-[#c1a878] text-sm">
       Loading 3D stage…
     </div>
   ),
@@ -210,9 +210,7 @@ function SimulateCanvasInner({
 
       {started && !hasSurface && running && (
         <div className="absolute inset-x-0 top-6 z-10 flex justify-center pointer-events-none">
-          <div className="px-4 py-2 rounded-full bg-black/50 text-white/80 text-sm backdrop-blur-md border border-white/10">
-            Generating beat…
-          </div>
+          <div className="sim-loading-pill">ALTER is directing the scene…</div>
         </div>
       )}
 

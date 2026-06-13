@@ -1,10 +1,31 @@
-/* ── Fullscreen root ───────────────────────────────────────────────────────── */
+/* ════════════════════════════════════════════════════════════════════════
+   ALTER — 70s Retro-Futurism skin
+   Warm parchment + burnt orange + harvest gold + teal. Chunky rounded
+   display type (Righteous), hard offset shadows, analog vignette + grain.
+   ════════════════════════════════════════════════════════════════════════ */
 
 .sim-root {
   position: fixed;
   inset: 0;
   overflow: hidden;
-  background: #0a0a12;
+  background: #14100b;
+
+  /* Palette */
+  --retro-cream: #f4e7cd;
+  --retro-paper: #efdcba;
+  --retro-paper-2: #fff7e6;
+  --retro-ink: #2e2013;
+  --retro-ink-soft: #5c4730;
+  --retro-deep: #17110a;
+  --retro-panel: #241a10;
+  --retro-orange: #e2703a;
+  --retro-rust: #c1502a;
+  --retro-gold: #e8a83c;
+  --retro-teal: #2f8f81;
+  --retro-brown: #6e4423;
+  --retro-line: #3a2817;
+
+  font-family: var(--font-retro-body), var(--font-plus-jakarta), system-ui, sans-serif;
 }
 
 .sim-stage {
@@ -14,7 +35,28 @@
   height: 100%;
 }
 
-/* ── Setup overlay ─────────────────────────────────────────────────────────── */
+/* Analog overlays — sit above the canvas, never block it */
+.sim-vignette,
+.sim-grain {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.sim-vignette {
+  background:
+    radial-gradient(120% 90% at 50% 35%, transparent 55%, rgba(40, 20, 8, 0.55) 100%),
+    linear-gradient(180deg, rgba(232, 168, 60, 0.06), transparent 30%);
+}
+
+.sim-grain {
+  opacity: 0.07;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ── Setup overlay ─────────────────────────────────────────────────────── */
 
 .sim-setup {
   position: absolute;
@@ -23,63 +65,74 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(4, 5, 14, 0.94);
-  backdrop-filter: blur(16px);
+  background:
+    radial-gradient(80% 60% at 50% 0%, rgba(226, 112, 58, 0.18), transparent 70%),
+    linear-gradient(180deg, #1c1409, #0f0b06);
   padding: 20px;
   overflow-y: auto;
 }
 
 .sim-setup__card {
   width: 100%;
-  max-width: 680px;
-  border-radius: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  background: rgba(14, 16, 28, 0.97);
-  padding: 32px 36px 28px;
-  box-shadow: 0 32px 100px rgba(0, 0, 0, 0.6);
+  max-width: 700px;
+  border-radius: 26px;
+  border: 3px solid var(--retro-line);
+  background:
+    repeating-linear-gradient(
+      0deg,
+      rgba(110, 68, 35, 0.04),
+      rgba(110, 68, 35, 0.04) 2px,
+      transparent 2px,
+      transparent 4px
+    ),
+    var(--retro-cream);
+  padding: 34px 38px 30px;
+  box-shadow: 8px 8px 0 var(--retro-line), 0 30px 90px rgba(0, 0, 0, 0.5);
 }
 
 .sim-setup__title {
-  font-size: 28px;
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  margin: 0 0 4px;
-  color: #fff;
-  background: linear-gradient(135deg, #fff 40%, #4dd2ff);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: 56px;
+  line-height: 1;
+  letter-spacing: 0.06em;
+  margin: 0 0 10px;
+  color: var(--retro-orange);
+  text-shadow: 2px 2px 0 var(--retro-gold), 4px 4px 0 var(--retro-line);
+}
+
+@media (max-width: 520px) {
+  .sim-setup__title { font-size: 40px; }
+  .sim-setup__card { padding: 24px 22px; }
 }
 
 .sim-setup__sub {
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.45);
-  margin: 0 0 28px;
+  font-size: 14.5px;
+  color: var(--retro-ink-soft);
+  margin: 0 0 26px;
+  max-width: 46ch;
 }
+.sim-setup__sub em { color: var(--retro-rust); font-style: italic; font-weight: 600; }
 
 .sim-setup__label {
   display: block;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.09em;
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: 13px;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.4);
-  margin-bottom: 10px;
+  color: var(--retro-brown);
+  margin-bottom: 11px;
 }
 
-/* ── Scenario grid ─────────────────────────────────────────────────────────── */
-
+/* Scenario grid */
 .sim-setup__scenario-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
+  gap: 11px;
   margin-bottom: 28px;
 }
 
 @media (max-width: 560px) {
-  .sim-setup__scenario-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
+  .sim-setup__scenario-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
 .sim-setup__scenario-card {
@@ -87,53 +140,72 @@
   flex-direction: column;
   align-items: flex-start;
   gap: 4px;
-  padding: 14px 14px 12px;
-  border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.04);
+  padding: 14px;
+  border-radius: 16px;
+  border: 2px solid var(--retro-line);
+  background: var(--retro-paper);
   cursor: pointer;
   text-align: left;
-  transition: all 0.18s;
+  transition: transform 0.12s, box-shadow 0.12s, background 0.12s;
 }
 
 .sim-setup__scenario-card:hover {
-  border-color: rgba(255, 255, 255, 0.22);
-  background: rgba(255, 255, 255, 0.07);
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0 var(--retro-line);
 }
 
 .sim-setup__scenario-card--active {
-  border-color: #4dd2ff;
-  background: rgba(77, 210, 255, 0.1);
-  box-shadow: 0 0 24px rgba(77, 210, 255, 0.14);
+  background: var(--retro-gold);
+  box-shadow: 4px 4px 0 var(--retro-line);
 }
 
-.sim-setup__scenario-icon {
-  font-size: 22px;
-  line-height: 1;
-  margin-bottom: 2px;
-}
-
+.sim-setup__scenario-icon { font-size: 24px; line-height: 1; }
 .sim-setup__scenario-name {
-  font-size: 13px;
-  font-weight: 700;
-  color: #fff;
-  line-height: 1.2;
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: 13.5px;
+  letter-spacing: 0.02em;
+  color: var(--retro-ink);
 }
-
 .sim-setup__scenario-desc {
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.45);
+  font-size: 11.5px;
+  color: var(--retro-ink-soft);
   line-height: 1.4;
 }
 
-/* ── Character columns ─────────────────────────────────────────────────────── */
-
+/* Describe-yourself block */
 .sim-setup__you {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 9px;
   margin-bottom: 18px;
 }
+
+.sim-setup__input,
+.sim-setup__textarea {
+  width: 100%;
+  padding: 11px 14px;
+  border-radius: 12px;
+  border: 2px solid var(--retro-line);
+  background: var(--retro-paper-2);
+  color: var(--retro-ink);
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.sim-setup__textarea {
+  min-height: 84px;
+  resize: vertical;
+  line-height: 1.5;
+}
+.sim-setup__input:focus,
+.sim-setup__textarea:focus {
+  border-color: var(--retro-orange);
+  box-shadow: 3px 3px 0 rgba(226, 112, 58, 0.35);
+}
+.sim-setup__input::placeholder,
+.sim-setup__textarea::placeholder { color: #a78a63; }
 
 /* Pre-made NPC card */
 .sim-setup__npc {
@@ -142,107 +214,55 @@
   gap: 3px;
   padding: 14px 16px;
   border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  background: rgba(255, 255, 255, 0.035);
-  margin-bottom: 22px;
+  border: 2px dashed var(--retro-brown);
+  background: rgba(47, 143, 129, 0.1);
+  margin-bottom: 24px;
 }
-
 .sim-setup__npc-label {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.09em;
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.38);
+  color: var(--retro-teal);
 }
-
 .sim-setup__npc-name {
-  font-size: 15px;
-  font-weight: 700;
-  color: #ffb86b;
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: 17px;
+  color: var(--retro-rust);
 }
+.sim-setup__npc-desc { font-size: 12.5px; color: var(--retro-ink-soft); line-height: 1.4; }
 
-.sim-setup__npc-desc {
-  font-size: 12.5px;
-  color: rgba(255, 255, 255, 0.55);
-  line-height: 1.4;
-}
-
-.sim-setup__input {
-  width: 100%;
-  padding: 10px 14px;
-  border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(0, 0, 0, 0.35);
-  color: #fff;
-  font-size: 14px;
-  font-family: inherit;
-  outline: none;
-  transition: border-color 0.15s;
-  box-sizing: border-box;
-}
-
-.sim-setup__input:focus {
-  border-color: rgba(77, 210, 255, 0.5);
-}
-
-.sim-setup__input::placeholder {
-  color: rgba(255, 255, 255, 0.28);
-}
-
-.sim-setup__textarea {
-  width: 100%;
-  padding: 10px 14px;
-  border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(0, 0, 0, 0.35);
-  color: #fff;
-  font-size: 13px;
-  font-family: inherit;
-  outline: none;
-  resize: vertical;
-  min-height: 80px;
-  transition: border-color 0.15s;
-  box-sizing: border-box;
-  line-height: 1.5;
-}
-
-.sim-setup__textarea:focus {
-  border-color: rgba(77, 210, 255, 0.5);
-}
-
-.sim-setup__textarea::placeholder {
-  color: rgba(255, 255, 255, 0.28);
-}
-
+/* Big retro action button */
 .sim-setup__begin {
   width: 100%;
   padding: 15px;
   border-radius: 14px;
-  border: none;
-  background: linear-gradient(135deg, #4dd2ff, #4dabf7);
-  color: #050a14;
-  font-size: 15px;
-  font-weight: 800;
-  letter-spacing: 0.01em;
+  border: 2px solid var(--retro-line);
+  background: var(--retro-orange);
+  color: #1c1409;
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: 17px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
   cursor: pointer;
-  transition: opacity 0.15s, transform 0.1s;
+  box-shadow: 4px 4px 0 var(--retro-line);
+  transition: transform 0.1s, box-shadow 0.1s, opacity 0.15s;
 }
-
 .sim-setup__begin:hover:not(:disabled) {
-  opacity: 0.9;
-  transform: translateY(-1px);
+  transform: translate(-1px, -1px);
+  box-shadow: 6px 6px 0 var(--retro-line);
 }
-
-.sim-setup__begin:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
+.sim-setup__begin:active:not(:disabled) {
+  transform: translate(4px, 4px);
+  box-shadow: 0 0 0 var(--retro-line);
 }
+.sim-setup__begin:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: 2px 2px 0 var(--retro-line); }
 
-/* ── HUD overlay ───────────────────────────────────────────────────────────── */
+/* ── HUD overlay ───────────────────────────────────────────────────────── */
 
 .sim-hud {
   pointer-events: auto;
-  max-width: 960px;
+  max-width: 940px;
   margin: 0 auto;
 }
 
@@ -256,132 +276,214 @@
 
 .sim-hud-panel {
   border-radius: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  background: rgba(0, 0, 0, 0.48);
-  backdrop-filter: blur(16px);
-  padding: 16px 20px;
-  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.4);
+  border: 2px solid var(--retro-line);
+  background: rgba(244, 231, 205, 0.94);
+  padding: 14px 18px;
+  box-shadow: 5px 5px 0 rgba(58, 40, 23, 0.6);
 }
 
-/* ── Next beat control ─────────────────────────────────────────────────────── */
+/* ── Retro skin for the A2UI HUD components (scoped to the sim only) ────── */
+
+.sim-root .alt-psyche,
+.sim-root .alt-beat,
+.sim-root .alt-fork {
+  background: rgba(255, 247, 230, 0.6);
+  border: 2px solid var(--retro-line);
+  color: var(--retro-ink);
+  backdrop-filter: none;
+  border-radius: 14px;
+}
+.sim-root .alt-psyche { border-left: 6px solid var(--alt-accent); }
+.sim-root .alt-psyche__name,
+.sim-root .alt-beat__headline,
+.sim-root .alt-fork__prompt {
+  font-family: var(--font-display), system-ui, sans-serif;
+  letter-spacing: 0.02em;
+  color: var(--retro-ink);
+}
+.sim-root .alt-psyche__emotion { color: var(--retro-rust); }
+.sim-root .alt-psyche__thought { color: var(--retro-ink-soft); }
+.sim-root .alt-psyche__stress { color: var(--retro-brown); opacity: 1; }
+.sim-root .alt-psyche__bar { background: rgba(110, 68, 35, 0.22); }
+.sim-root .alt-psyche__fill { background: var(--retro-orange); box-shadow: none; }
+
+.sim-root .alt-tension { color: var(--retro-ink); }
+.sim-root .alt-tension__top {
+  font-family: var(--font-display), system-ui, sans-serif;
+  letter-spacing: 0.12em;
+  color: var(--retro-brown);
+}
+.sim-root .alt-tension__val { color: var(--retro-rust); }
+.sim-root .alt-tension__track { background: rgba(110, 68, 35, 0.22); }
+.sim-root .alt-tension__fill { background: var(--retro-orange); box-shadow: none; }
+
+.sim-root .alt-beat__num { color: var(--retro-brown); opacity: 1; letter-spacing: 0.12em; }
+.sim-root .alt-beat__detail { color: var(--retro-ink-soft); }
+.sim-root .alt-beat__tag {
+  background: var(--retro-gold);
+  color: var(--retro-ink);
+}
+
+.sim-root .alt-fork { border: 2px dashed var(--retro-teal); }
+.sim-root .alt-fork__opt {
+  background: var(--retro-paper-2);
+  border: 2px solid var(--retro-line);
+  color: var(--retro-ink);
+}
+.sim-root .alt-fork__opt:hover { border-color: var(--retro-orange); }
+.sim-root .alt-fork__label { color: var(--retro-ink); }
+.sim-root .alt-fork__consequence { color: var(--retro-ink-soft); opacity: 1; }
+
+/* ── Bottom controls ───────────────────────────────────────────────────── */
 
 .sim-next-beat {
   position: absolute;
-  bottom: 28px;
+  bottom: 26px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 20;
-  padding: 13px 32px;
+  padding: 13px 30px;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(12px);
-  color: #fff;
+  border: 2px solid var(--retro-line);
+  background: var(--retro-orange);
+  color: #1c1409;
+  font-family: var(--font-display), system-ui, sans-serif;
   font-size: 14px;
-  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
   cursor: pointer;
-  transition: all 0.18s;
+  box-shadow: 4px 4px 0 var(--retro-line);
+  transition: transform 0.1s, box-shadow 0.1s;
   pointer-events: auto;
   white-space: nowrap;
 }
-
 .sim-next-beat:hover:not(:disabled) {
-  background: rgba(77, 210, 255, 0.18);
-  border-color: rgba(77, 210, 255, 0.5);
-  color: #4dd2ff;
-  transform: translateX(-50%) translateY(-2px);
-  box-shadow: 0 6px 24px rgba(77, 210, 255, 0.2);
+  transform: translateX(-50%) translate(-1px, -1px);
+  box-shadow: 6px 6px 0 var(--retro-line);
 }
-
-.sim-next-beat:disabled {
-  opacity: 0.38;
-  cursor: not-allowed;
+.sim-next-beat:active:not(:disabled) {
+  transform: translateX(-50%) translate(3px, 3px);
+  box-shadow: 0 0 0 var(--retro-line);
 }
-
-/* ── Auto-play button ──────────────────────────────────────────────────────── */
+.sim-next-beat:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .sim-autoplay-btn {
   position: absolute;
-  bottom: 28px;
-  right: 28px;
+  bottom: 26px;
+  right: 24px;
   z-index: 20;
-  padding: 10px 18px;
+  padding: 10px 16px;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(0, 0, 0, 0.55);
-  backdrop-filter: blur(10px);
-  color: rgba(255, 255, 255, 0.65);
+  border: 2px solid var(--retro-line);
+  background: var(--retro-cream);
+  color: var(--retro-ink);
+  font-family: var(--font-display), system-ui, sans-serif;
   font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   cursor: pointer;
-  transition: all 0.18s;
+  box-shadow: 3px 3px 0 var(--retro-line);
+  transition: transform 0.1s, box-shadow 0.1s, background 0.12s;
   pointer-events: auto;
 }
+.sim-autoplay-btn:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--retro-line); }
+.sim-autoplay-btn--active { background: var(--retro-gold); }
 
-.sim-autoplay-btn:hover {
-  border-color: rgba(255, 255, 255, 0.28);
-  color: #fff;
+@media (max-width: 520px) {
+  .sim-next-beat { bottom: 18px; padding: 11px 22px; font-size: 13px; }
+  .sim-autoplay-btn { bottom: 18px; right: 14px; padding: 9px 13px; }
 }
 
-.sim-autoplay-btn--active {
-  border-color: #4dd2ff;
-  color: #4dd2ff;
-  background: rgba(77, 210, 255, 0.12);
-  box-shadow: 0 0 18px rgba(77, 210, 255, 0.18);
+/* Generating-beat pill */
+.sim-loading-pill {
+  padding: 9px 18px;
+  border-radius: 999px;
+  border: 2px solid var(--retro-line);
+  background: var(--retro-cream);
+  color: var(--retro-ink);
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: 12.5px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  box-shadow: 3px 3px 0 var(--retro-line);
+  animation: sim-pill-pulse 1.4s ease-in-out infinite;
 }
 
-/* ── Speech bubbles ────────────────────────────────────────────────────────── */
+@keyframes sim-pill-pulse {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}
+
+/* ── Speech bubbles (Html overlay in 3D) ───────────────────────────────── */
+
+@keyframes sim-bubble-pop {
+  0%   { transform: scale(0.7) translateY(10px); opacity: 0; }
+  60%  { transform: scale(1.05); opacity: 1; }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
 
 .sim-speech-bubble {
-  background: rgba(8, 10, 20, 0.88);
-  color: #fff;
+  background: var(--retro-cream);
+  color: var(--retro-ink);
   padding: 11px 15px;
   border-radius: 16px;
-  max-width: 260px;
-  font-size: 13px;
+  max-width: 250px;
+  font-size: 13.5px;
   line-height: 1.45;
   position: relative;
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
-  transition: opacity 0.6s ease;
+  border: 2px solid var(--retro-line);
+  box-shadow: 3px 3px 0 var(--retro-line);
   pointer-events: none;
   user-select: none;
+  transform-origin: center bottom;
+  animation: sim-bubble-pop 0.34s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .sim-speech-bubble::after {
   content: "";
   position: absolute;
-  bottom: -10px;
+  bottom: -11px;
   left: 50%;
   transform: translateX(-50%);
   width: 0;
   height: 0;
   border-left: 10px solid transparent;
   border-right: 10px solid transparent;
-  border-top: 10px solid rgba(8, 10, 20, 0.88);
+  border-top: 11px solid var(--retro-line);
+}
+.sim-speech-bubble::before {
+  content: "";
+  position: absolute;
+  bottom: -7px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1;
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 9px solid var(--retro-cream);
 }
 
 .sim-speech-bubble__name {
-  font-weight: 700;
-  font-size: 10px;
-  letter-spacing: 0.08em;
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #4dd2ff;
-  margin-bottom: 5px;
+  color: var(--retro-rust);
+  margin-bottom: 3px;
 }
 
 .sim-speech-bubble__subname {
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.03em;
-  color: rgba(255, 255, 255, 0.45);
+  color: var(--retro-ink-soft);
   margin-top: -2px;
   margin-bottom: 5px;
 }
 
 .sim-speech-bubble__line {
   margin: 0;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--retro-ink);
 }

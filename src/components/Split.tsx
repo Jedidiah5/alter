@@ -32,7 +32,18 @@ export function Split({
   const [fraction, setFraction] = useState<number>(initialLeftFraction);
   const [hydrated, setHydrated] = useState(false);
   const [dragging, setDragging] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Below the md breakpoint the horizontal drag-split is unusable; stack the
+  // two panes vertically instead (chat on top, canvas below).
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    const update = () => setIsMobile(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
 
   // Hydrate from localStorage after mount (avoid SSR mismatch).
   useEffect(() => {
@@ -90,6 +101,17 @@ export function Split({
   }, [dragging]);
 
   const leftPct = `${fraction * 100}%`;
+
+  if (isMobile) {
+    return (
+      <div className="flex-1 min-h-0 flex flex-col">
+        <div className="h-[45%] min-h-0 overflow-hidden border-b border-[var(--line)] bg-[var(--surface)]">
+          {left}
+        </div>
+        <div className="flex-1 min-h-0 overflow-hidden">{right}</div>
+      </div>
+    );
+  }
 
   return (
     <div ref={containerRef} className="flex-1 min-h-0 flex">

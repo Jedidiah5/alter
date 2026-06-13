@@ -6,7 +6,7 @@
 
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls, Environment, Html, ContactShadows } from "@react-three/drei";
 import * as THREE from "three";
@@ -116,20 +116,13 @@ function SpeechBubble({
   beatKey: string;
   isUser?: boolean;
 }) {
-  const [visible, setVisible] = useState(true);
-
-  useEffect(() => {
-    if (!dialogue) { setVisible(false); return; }
-    setVisible(true);
-    const t = setTimeout(() => setVisible(false), 5000);
-    return () => clearTimeout(t);
-  }, [dialogue, beatKey]);
-
-  if (!dialogue || !visible) return null;
+  // Re-trigger the pop-in animation each beat; keep the bubble up until the
+  // next beat replaces the line (no auto-hide — it was making dialogue vanish).
+  if (!dialogue) return null;
 
   return (
     <Html position={[0, 2.9, 0]} center distanceFactor={9} zIndexRange={[100, 0]}>
-      <div className="sim-speech-bubble" style={{ opacity: visible ? 1 : 0 }}>
+      <div className="sim-speech-bubble" key={beatKey}>
         <div className="sim-speech-bubble__name">{isUser ? "YOU" : name}</div>
         {isUser && <div className="sim-speech-bubble__subname">{name}</div>}
         <p className="sim-speech-bubble__line">{dialogue}</p>

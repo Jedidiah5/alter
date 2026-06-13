@@ -106,7 +106,7 @@ export default function Home() {
       </main>
 
       <footer className="border-t border-[var(--line)] py-6 mt-10">
-        <div className="max-w-[1320px] mx-auto px-6 text-xs text-[var(--muted)] flex items-center justify-between">
+        <div className="max-w-[1320px] mx-auto px-6 text-xs text-[var(--muted)] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <span>
             Drop your design tokens into{" "}
             <code className="mono px-1.5 py-0.5 rounded bg-[var(--surface-soft)] border border-[var(--line)] text-[11px]">
@@ -163,7 +163,7 @@ function ModeCard({
   return (
     <Link
       href={href}
-      className="group surface p-7 hover:border-[var(--lilac)] transition relative overflow-hidden"
+      className="group surface p-6 sm:p-7 hover:border-[var(--lilac)] transition relative overflow-hidden"
     >
       <div className="absolute -top-20 -right-20 w-[260px] h-[260px] rounded-full brand-gradient-soft opacity-0 group-hover:opacity-100 transition-opacity" />
       <div className="relative">

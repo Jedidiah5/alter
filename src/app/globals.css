@@ -89,6 +89,16 @@ body {
     var(--font-spline-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
+/* Horizontally scrollable rows (e.g. the top nav on mobile) without a
+ * visible scrollbar. */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 /* ── Brand chrome ────────────────────────────────────────────── */
 .brand-gradient {
   background: var(--brand-gradient);
