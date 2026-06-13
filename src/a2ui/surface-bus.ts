@@ -23,7 +23,13 @@ export type StageState = {
   }>;
 };
 
-export type SimScenario = "classroom_flood" | "robbery";
+export type SimScenario =
+  | "classroom_flood"
+  | "robbery"
+  | "job_interview"
+  | "first_date"
+  | "argument"
+  | "hospital";
 
 type Snapshot = {
   surfaceId: string | null;
@@ -57,8 +63,9 @@ function applyDataModel(channel: string, op: A2UIOp) {
   const value = ud?.value;
   if (!value) return;
   if (value.stage) stageStates.set(channel, value.stage);
-  if (value.scenario === "robbery" || value.scenario === "classroom_flood") {
-    scenarios.set(channel, value.scenario);
+  const validScenarios: SimScenario[] = ["classroom_flood", "robbery", "job_interview", "first_date", "argument", "hospital"];
+  if (validScenarios.includes(value.scenario as SimScenario)) {
+    scenarios.set(channel, value.scenario as SimScenario);
   }
 }
 
@@ -92,8 +99,9 @@ function latestFromOps(ops: A2UIOp[]): {
     const value = ud?.value;
     if (!value) continue;
     if (value.stage) stageState = value.stage;
-    if (value.scenario === "robbery" || value.scenario === "classroom_flood") {
-      scenario = value.scenario;
+    const validScenarios2: SimScenario[] = ["classroom_flood", "robbery", "job_interview", "first_date", "argument", "hospital"];
+    if (validScenarios2.includes(value.scenario as SimScenario)) {
+      scenario = value.scenario as SimScenario;
     }
   }
   return { stageState, scenario };

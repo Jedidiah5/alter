@@ -35,17 +35,12 @@ export type SimSetup = {
 
 function parseScenarioFromText(text: string): SimScenario | null {
   const t = text.toLowerCase();
-  if (
-    t.includes("robbery") ||
-    t.includes("robber") ||
-    t.includes("convenience store") ||
-    t.includes("armed")
-  ) {
-    return "robbery";
-  }
-  if (t.includes("flood") || t.includes("classroom")) {
-    return "classroom_flood";
-  }
+  if (t.includes("robbery") || t.includes("robber") || t.includes("convenience store") || t.includes("armed")) return "robbery";
+  if (t.includes("flood") || t.includes("classroom")) return "classroom_flood";
+  if (t.includes("job_interview") || t.includes("interview") || t.includes("interviewer")) return "job_interview";
+  if (t.includes("first_date") || t.includes("first date") || t.includes("restaurant") || t.includes("candle")) return "first_date";
+  if (t.includes("argument") || t.includes("living room") || t.includes("fight")) return "argument";
+  if (t.includes("hospital") || t.includes("waiting room") || t.includes("doctor") || t.includes("medical")) return "hospital";
   return null;
 }
 
