@@ -7,10 +7,11 @@ import re
 from typing import TypedDict
 
 from langchain.tools import tool
-from langchain_openai import ChatOpenAI
 
-# We keep the extractor model cheap; this is structured JSON work, not chat.
-_EXTRACTOR = ChatOpenAI(model="gpt-5.5", temperature=0)
+from src.llm import chat_model
+
+# Structured JSON extraction; keep temperature at 0 for deterministic output.
+_EXTRACTOR = chat_model(temperature=0)
 
 
 class Kpi(TypedDict):

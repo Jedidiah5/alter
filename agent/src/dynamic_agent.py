@@ -43,10 +43,10 @@ from langchain.agents import create_agent
 from langchain.tools import ToolRuntime, tool
 from langchain_core.messages import SystemMessage
 from langchain_core.tools import tool as lc_tool
-from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.memory import MemorySaver
 
 from src.catalog import CATALOG_ID, CATALOG_PROMPT
+from src.llm import chat_model
 from src.pdf_tools import query_pdf
 
 
@@ -72,7 +72,7 @@ def render_a2ui(
     return "rendered"
 
 
-_RENDER_MODEL = ChatOpenAI(model="gpt-5.5", temperature=0)
+_RENDER_MODEL = chat_model(temperature=0)
 
 
 @tool()
@@ -221,7 +221,7 @@ above. Skip charts unless the user explicitly asked for data viz.
 
 def build_dynamic_agent():
     return create_agent(
-        model="openai:gpt-5.5",
+        model=chat_model(),
         tools=[query_pdf, generate_a2ui],
         middleware=[CopilotKitMiddleware()],
         system_prompt=SYSTEM_PROMPT,
