@@ -8,9 +8,12 @@ optionally DecisionFork at turning points.
 from __future__ import annotations
 
 import json
+import os
 from typing import Any
+from urllib.parse import urlparse
 
 from copilotkit import CopilotKitMiddleware, a2ui
+from linkup import LinkupClient, LinkupSourcedAnswer
 from langchain.agents import create_agent
 from langchain.tools import tool
 from langgraph.checkpoint.memory import MemorySaver
@@ -98,6 +101,9 @@ You must respond with ONLY a JSON object in this exact shape (no markdown):
     { "<char2, same shape>" }
   ],
   "offer_fork": <true if this is a turning point where player input would matter>,
+  "fact_injection": {
+    "appliedBy": "<only when a real fact is supplied: the character name who acts on the fact>"
+  },
   "fork": {
     "prompt": "<only if offer_fork true: a question to steer the sim>",
     "options": [
@@ -155,14 +161,117 @@ def build_user_prompt(
     scenario_key: str,
     beat: int,
     history: str,
+    real_fact: dict[str, str] | None = None,
 ) -> str:
+    fact_instruction = ""
+    if real_fact:
+        fact_instruction = f"""
+This is a LinkUp-sourced real-world fact for this beat:
+Source: {real_fact["sourceLabel"]}
+Fact: {real_fact["fact"]}
+
+Beat {beat} MUST show exactly one character acting on this fact in a grounded,
+natural way. Include "fact_injection": {{"appliedBy": "<that character's name>"}}.
+The character may say the fact aloud in natural dialogue, e.g. "Emergency guidance
+says..." but must not sound like a lecture."""
+
     return f"""Character 1: {c1['name']} — {c1['personality']}
 Character 2: {c2['name']} — {c2['personality']}
 Scenario: {SCENARIOS.get(scenario_key, scenario_key)}
 Beat: {beat}
 {f'Recent beats:\n{history}' if history else 'This is the opening moment.'}
+{fact_instruction}
 
 Simulate the next beat."""
+
+
+def _scenario_description(scenario: str) -> str:
+    return SCENARIOS.get(scenario, scenario)
+
+
+def _source_label(name: str, url: str) -> str:
+    if name:
+        return name
+
+    host = urlparse(url).netloc
+    return host or "LinkUp web search"
+
+
+def search_real_facts(scenario_description: str) -> dict[str, str]:
+    api_key = os.environ.get("LINKUP_API_KEY")
+    if not api_key:
+        return {}
+
+    try:
+        client = LinkupClient(api_key=api_key)
+        response = client.search(
+            (
+                "Find one authoritative real-world emergency protocol or survival "
+                f"tip that applies to this crisis scenario: {scenario_description}. "
+                "Return one concise actionable fact."
+            ),
+            depth="standard",
+            output_type="sourcedAnswer",
+            include_sources=True,
+            timeout=10,
+        )
+    except Exception:
+        return {}
+
+    if not isinstance(response, LinkupSourcedAnswer):
+        return {}
+
+    fact = " ".join(response.answer.split())
+    if not fact:
+        return {}
+
+    source_label = "LinkUp web search"
+    if response.sources:
+        source = response.sources[0]
+        source_label = _source_label(source.name, source.url)
+
+    return {
+        "sourceLabel": source_label,
+        "fact": fact,
+        "appliedBy": "",
+    }
+
+
+def _fact_for_beat(scenario: str, beat_number: int) -> dict[str, str] | None:
+    if beat_number % 3 != 0:
+        return None
+
+    fact = search_real_facts(_scenario_description(scenario))
+    return fact or None
+
+
+def _apply_fact_to_sim(
+    sim: dict[str, Any],
+    real_fact: dict[str, str] | None,
+) -> None:
+    if not real_fact:
+        return
+
+    applied_by = ""
+    fact_injection = sim.get("fact_injection")
+    if isinstance(fact_injection, dict):
+        value = fact_injection.get("appliedBy")
+        if isinstance(value, str):
+            applied_by = value
+
+    if not applied_by:
+        for character in sim.get("characters", []):
+            if isinstance(character, dict):
+                name = character.get("name")
+                if isinstance(name, str) and name:
+                    applied_by = name
+                    break
+
+    sim["fact_injection"] = {
+        "sourceLabel": real_fact["sourceLabel"],
+        "fact": real_fact["fact"],
+        "appliedBy": applied_by,
+    }
 
 
 def parse_sim(raw: str) -> dict[str, Any]:
@@ -264,6 +373,19 @@ def sim_to_a2ui_components(sim: dict[str, Any]) -> list[dict[str, Any]]:
     )
     child_ids.append("beat")
 
+    fact_injection = sim.get("fact_injection")
+    if isinstance(fact_injection, dict) and fact_injection.get("fact"):
+        components.append(
+            {
+                "id": "fact",
+                "component": "FactInjection",
+                "sourceLabel": fact_injection.get("sourceLabel", "LinkUp web search"),
+                "fact": fact_injection.get("fact", ""),
+                "appliedBy": fact_injection.get("appliedBy", ""),
+            }
+        )
+        child_ids.append("fact")
+
     for i, ch in enumerate(sim.get("characters", [])):
         cid = f"psyche-{i}"
         child_ids.append(cid)
@@ -312,7 +434,8 @@ def simulate_beat(
     c1 = {"name": character1_name, "personality": character1_personality}
     c2 = {"name": character2_name, "personality": character2_personality}
 
-    prompt = build_user_prompt(c1, c2, scenario, beat_number, history)
+    real_fact = _fact_for_beat(scenario, beat_number)
+    prompt = build_user_prompt(c1, c2, scenario, beat_number, history, real_fact)
     llm = chat_model(temperature=0.9)
     resp = llm.invoke([("system", SIM_SYSTEM_PROMPT), ("human", prompt)])
 
@@ -324,6 +447,7 @@ def simulate_beat(
         )
     sim = parse_sim(str(content))
     sim["_beat_number"] = beat_number
+    _apply_fact_to_sim(sim, real_fact)
 
     components = sim_to_a2ui_components(sim)
     return a2ui.render(
