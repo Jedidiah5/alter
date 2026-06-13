@@ -9,7 +9,7 @@
     "build": "next build",
     "start": "next start",
     "install:agent": "cd agent && uv sync",
-    "postinstall": "pnpm run install:agent"
+    "postinstall": "node -e \"process.exit(process.env.VERCEL?0:1)\" || pnpm run install:agent"
   },
   "dependencies": {
     "@ag-ui/client": "^0.0.53",
