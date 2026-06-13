@@ -1,0 +1,23 @@
+{
+  "thread_id": "test-thread-1",
+  "run_id": "test-run-1",
+  "state": {},
+  "messages": [
+    {
+      "id": "msg-1",
+      "role": "user",
+      "content": "Render the dashboard.",
+      "input": [
+        { "type": "text", "text": "Render the dashboard." },
+        {
+          "type": "data",
+          "value": "Apple Inc. Q4 FY24 Earnings Summary\nTotal Revenue: $94,930 million (+6.1% vs Q4 FY23 $89,498M)\nProducts Revenue: $69,958 million\nServices Revenue: $24,972 million\nGross Margin: 46.2%\nOperating Income: $29,590 million\nNet Income: $14,736 million",
+          "mimeType": "text/plain"
+        }
+      ]
+    }
+  ],
+  "tools": [],
+  "context": [],
+  "forwarded_props": {}
+}
