@@ -105,7 +105,17 @@ const PALETTES = [
 
 // ─── Speech bubble ────────────────────────────────────────────────────────────
 
-function SpeechBubble({ name, dialogue, beatKey }: { name: string; dialogue: string; beatKey: string }) {
+function SpeechBubble({
+  name,
+  dialogue,
+  beatKey,
+  isUser,
+}: {
+  name: string;
+  dialogue: string;
+  beatKey: string;
+  isUser?: boolean;
+}) {
   const [visible, setVisible] = useState(true);
 
   useEffect(() => {
@@ -120,7 +130,8 @@ function SpeechBubble({ name, dialogue, beatKey }: { name: string; dialogue: str
   return (
     <Html position={[0, 2.9, 0]} center distanceFactor={9} zIndexRange={[100, 0]}>
       <div className="sim-speech-bubble" style={{ opacity: visible ? 1 : 0 }}>
-        <div className="sim-speech-bubble__name">{name}</div>
+        <div className="sim-speech-bubble__name">{isUser ? "YOU" : name}</div>
+        {isUser && <div className="sim-speech-bubble__subname">{name}</div>}
         <p className="sim-speech-bubble__line">{dialogue}</p>
       </div>
     </Html>
@@ -392,11 +403,13 @@ function Humanoid({
   palette,
   data,
   beatKey,
+  isUser,
 }: {
   home: [number, number, number];
   palette: (typeof PALETTES)[number];
   data?: StageCharacter;
   beatKey: string;
+  isUser?: boolean;
 }) {
   const group = useRef<THREE.Group>(null);
   const auraRef = useRef<THREE.Mesh>(null);
@@ -566,7 +579,7 @@ function Humanoid({
       </mesh>
 
       {data?.dialogue && (
-        <SpeechBubble name={data.name} dialogue={data.dialogue} beatKey={beatKey} />
+        <SpeechBubble name={data.name} dialogue={data.dialogue} beatKey={beatKey} isUser={isUser} />
       )}
     </group>
   );
@@ -1288,12 +1301,13 @@ export default function CharacterStage({
 
         <ContactShadows position={[0, -0.48, 0]} opacity={0.35} scale={14} blur={2.8} far={4} />
 
-        {/* Characters — home positions; the AI moves them from here each beat */}
+        {/* Characters — character 0 is always the user's AI self */}
         <Humanoid
           home={[-1.7, 0, 0]}
           palette={PALETTES[0]}
           data={chars[0]}
           beatKey={`${beatKey}-0`}
+          isUser
         />
         <Humanoid
           home={[1.7, 0, 0]}

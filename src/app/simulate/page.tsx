@@ -15,70 +15,76 @@ import "./simulate.css";
 
 const AGENT_ID = "simulate_agent";
 
+/**
+ * Each scenario ships with a pre-made NPC foil. The user only describes
+ * themselves (Character 1); the app supplies Character 2.
+ */
 const SCENARIOS: Array<{
   key: SimScenario;
   label: string;
   icon: string;
   desc: string;
-  defaultC1: string;
-  defaultC2: string;
+  npcName: string;
+  npcPersonality: string;
 }> = [
   {
     key: "classroom_flood",
     label: "Classroom Flood",
     icon: "🌊",
     desc: "Water rising fast in a locked classroom. One window. No exits.",
-    defaultC1: "An anxious teacher who freezes under pressure but deeply cares",
-    defaultC2: "A calm natural leader who takes charge in a crisis",
+    npcName: "Mr. Torres",
+    npcPersonality: "A strict but caring teacher who takes charge in emergencies",
   },
   {
     key: "robbery",
     label: "Robbery",
     icon: "🔫",
-    desc: "Armed robber enters a convenience store. Every second counts.",
-    defaultC1: "A timid cashier who panics when confronted",
-    defaultC2: "A quick-thinking regular customer who stays cold under pressure",
+    desc: "An armed robber bursts into the store and pulls a gun. Every second counts.",
+    npcName: "Sam",
+    npcPersonality: "A nervous cashier who has never been in danger before",
   },
   {
     key: "job_interview",
     label: "Job Interview",
     icon: "💼",
-    desc: "High-stakes interview. Unexpected personal question just dropped.",
-    defaultC1: "An overqualified candidate hiding their desperation",
-    defaultC2: "A sharp interviewer who reads people like books",
+    desc: "High-stakes interview. An unexpected personal question just dropped.",
+    npcName: "Diane Cole",
+    npcPersonality: "A sharp, no-nonsense hiring director who probes for weaknesses",
   },
   {
     key: "first_date",
     label: "First Date",
     icon: "🕯️",
-    desc: "Cozy restaurant. Chemistry uncertain. One just said something awkward.",
-    defaultC1: "An over-thinker who second-guesses every word they say",
-    defaultC2: "A charming extrovert who talks too much when nervous",
+    desc: "Cozy restaurant. The chemistry is uncertain and the silence is loud.",
+    npcName: "Alex",
+    npcPersonality: "A charming but guarded date who reveals little and watches closely",
   },
   {
     key: "argument",
     label: "The Argument",
     icon: "💥",
-    desc: "Living room. A secret just came out. Things just got very personal.",
-    defaultC1: "Someone who shuts down and goes cold when hurt",
-    defaultC2: "Someone who fights loudly but means it when they apologise",
+    desc: "Living room. A secret just came out. It just got very personal.",
+    npcName: "Jordan",
+    npcPersonality: "Your partner — hurt, demanding the truth, and refusing to let it go",
   },
   {
     key: "hospital",
     label: "Hospital Wait",
     icon: "🏥",
-    desc: "Waiting room. Doctor walking over. Test results about to change everything.",
-    defaultC1: "The patient — terrified but trying to stay stoic",
-    defaultC2: "The supportive friend who doesn't know what to say",
+    desc: "Waiting room. The doctor is walking over with your results.",
+    npcName: "Casey",
+    npcPersonality: "Your closest friend, trying to keep you calm while you wait",
   },
 ];
 
+const DEFAULT_SCENARIO = SCENARIOS[0];
+
 const DEFAULT_SETUP: SimSetup = {
-  c1Name: "Maya",
-  c1Personality: SCENARIOS[0].defaultC1,
-  c2Name: "Jordan",
-  c2Personality: SCENARIOS[0].defaultC2,
-  scenario: "classroom_flood",
+  c1Name: "",
+  c1Personality: "",
+  c2Name: DEFAULT_SCENARIO.npcName,
+  c2Personality: DEFAULT_SCENARIO.npcPersonality,
+  scenario: DEFAULT_SCENARIO.key,
 };
 
 export default function SimulatePage() {
@@ -100,6 +106,8 @@ export default function SimulatePage() {
   const [autoTimer, setAutoTimer] = useState<ReturnType<typeof setInterval> | null>(null);
 
   const running = agent.isRunning;
+  const activeScenario =
+    SCENARIOS.find((s) => s.key === setup.scenario) ?? DEFAULT_SCENARIO;
 
   const runAgent = useCallback(
     async (message: string) => {
@@ -127,7 +135,7 @@ export default function SimulatePage() {
   );
 
   const handleBegin = useCallback(async () => {
-    if (!setup.c1Name.trim() || !setup.c2Name.trim()) return;
+    if (!setup.c1Name.trim() || !setup.c1Personality.trim()) return;
     surfaceBus.reset(AGENT_ID);
     setStarted(true);
     setBeatNumber(1);
@@ -157,12 +165,13 @@ export default function SimulatePage() {
     }
   }, [autoPlay, autoTimer, running, handleNextBeat]);
 
+  // Picking a scenario swaps in that scenario's pre-made NPC (Character 2).
   const selectScenario = (s: typeof SCENARIOS[0]) => {
     setSetup((prev) => ({
       ...prev,
       scenario: s.key,
-      c1Personality: s.defaultC1,
-      c2Personality: s.defaultC2,
+      c2Name: s.npcName,
+      c2Personality: s.npcPersonality,
     }));
   };
 
@@ -201,7 +210,8 @@ export default function SimulatePage() {
           <div className="sim-setup__card">
             <h1 className="sim-setup__title">ALTER</h1>
             <p className="sim-setup__sub">
-              Two AI characters. One scenario. Watch personalities collide.
+              Discover your crisis personality — find out how <em>you</em> would
+              really react.
             </p>
 
             {/* Scenario grid */}
@@ -221,49 +231,42 @@ export default function SimulatePage() {
               ))}
             </div>
 
-            {/* Characters */}
-            <div className="sim-setup__chars">
-              <div className="sim-setup__char-col">
-                <span className="sim-setup__label">Character 1</span>
-                <input
-                  className="sim-setup__input"
-                  value={setup.c1Name}
-                  onChange={(e) => setSetup((s) => ({ ...s, c1Name: e.target.value }))}
-                  placeholder="Name"
-                />
-                <textarea
-                  className="sim-setup__textarea"
-                  value={setup.c1Personality}
-                  onChange={(e) => setSetup((s) => ({ ...s, c1Personality: e.target.value }))}
-                  placeholder="Describe their personality…"
-                  rows={3}
-                />
-              </div>
-              <div className="sim-setup__char-col">
-                <span className="sim-setup__label">Character 2</span>
-                <input
-                  className="sim-setup__input"
-                  value={setup.c2Name}
-                  onChange={(e) => setSetup((s) => ({ ...s, c2Name: e.target.value }))}
-                  placeholder="Name"
-                />
-                <textarea
-                  className="sim-setup__textarea"
-                  value={setup.c2Personality}
-                  onChange={(e) => setSetup((s) => ({ ...s, c2Personality: e.target.value }))}
-                  placeholder="Describe their personality…"
-                  rows={3}
-                />
-              </div>
+            {/* Describe yourself — the only character the user controls */}
+            <span className="sim-setup__label">Describe yourself</span>
+            <div className="sim-setup__you">
+              <input
+                className="sim-setup__input"
+                value={setup.c1Name}
+                onChange={(e) => setSetup((s) => ({ ...s, c1Name: e.target.value }))}
+                placeholder="Your name"
+              />
+              <textarea
+                className="sim-setup__textarea"
+                value={setup.c1Personality}
+                onChange={(e) =>
+                  setSetup((s) => ({ ...s, c1Personality: e.target.value }))
+                }
+                placeholder="e.g. I'm usually calm but I freeze under real pressure, and I overthink everything…"
+                rows={3}
+              />
+            </div>
+
+            {/* The pre-made NPC the user will be dropped in with */}
+            <div className="sim-setup__npc">
+              <span className="sim-setup__npc-label">You&apos;ll be dropped in with</span>
+              <span className="sim-setup__npc-name">{activeScenario.npcName}</span>
+              <span className="sim-setup__npc-desc">{activeScenario.npcPersonality}</span>
             </div>
 
             <button
               type="button"
               className="sim-setup__begin"
-              disabled={running || !setup.c1Name.trim() || !setup.c2Name.trim()}
+              disabled={
+                running || !setup.c1Name.trim() || !setup.c1Personality.trim()
+              }
               onClick={() => void handleBegin()}
             >
-              {running ? "Starting…" : "Begin Simulation"}
+              {running ? "Starting…" : "Drop me in"}
             </button>
           </div>
         </div>

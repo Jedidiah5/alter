@@ -1067,13 +1067,31 @@ const CharacterPsycheCard = ({
   thought: string;
   stress: number;
   accentColor?: string;
+  isUser?: boolean;
 }>) => {
   const accent =
     props.accentColor || EMOTION_COLORS[props.emotion] || "#4dd2ff";
   return (
     <div className="alt-psyche" style={{ ["--alt-accent" as string]: accent }}>
       <div className="alt-psyche__head">
-        <span className="alt-psyche__name">{props.characterName}</span>
+        <span style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          <span className="alt-psyche__name">
+            {props.isUser ? "YOU" : props.characterName}
+          </span>
+          {props.isUser && (
+            <span
+              style={{
+                fontSize: 11,
+                fontWeight: 600,
+                opacity: 0.55,
+                textTransform: "none",
+                letterSpacing: 0,
+              }}
+            >
+              {props.characterName}
+            </span>
+          )}
+        </span>
         <span className="alt-psyche__emotion">{props.emotion}</span>
       </div>
       <p className="alt-psyche__thought">“{props.thought}”</p>
@@ -1095,7 +1113,7 @@ const CharacterPsycheCard = ({
 
 const TensionMeter = ({
   props,
-}: RendererProps<{ tension: number; label?: string }>) => {
+}: RendererProps<{ tension: number; label?: string; subtitle?: string }>) => {
   const t = Math.min(100, Math.max(0, props.tension));
   const color = t > 70 ? "#ff3b3b" : t > 40 ? "#ffa63b" : "#3bd1ff";
   return (
@@ -1110,6 +1128,18 @@ const TensionMeter = ({
       <div className="alt-tension__track">
         <div className="alt-tension__fill" style={{ width: `${t}%` }} />
       </div>
+      {props.subtitle && (
+        <div
+          style={{
+            marginTop: 7,
+            fontSize: 11,
+            opacity: 0.55,
+            letterSpacing: "0.02em",
+          }}
+        >
+          {props.subtitle}
+        </div>
+      )}
     </div>
   );
 };

@@ -278,10 +278,16 @@ export const definitions = {
         "heroic",
         "nervous",
         "determined",
+        "embarrassed",
+        "amused",
+        "sad",
+        "hopeful",
       ]),
       thought: z.string(),
       stress: z.number().min(0).max(100),
       accentColor: z.string().optional(),
+      // True for the user's own AI self — rendered as "YOU".
+      isUser: z.boolean().optional(),
     }),
   },
 
@@ -291,6 +297,7 @@ export const definitions = {
     props: z.object({
       tension: z.number().min(0).max(100),
       label: z.string().optional(),
+      subtitle: z.string().optional(),
     }),
   },
 

@@ -20,12 +20,23 @@ from src.llm import chat_model
 
 SURFACE = "alter-sim"
 
-SIM_SYSTEM_PROMPT = """You are ALTER, a character simulation engine.
+SIM_SYSTEM_PROMPT = """You are ALTER, a personal crisis simulator. You reveal how a
+real person would react in a crisis by simulating their "crisis self".
 
-You are given two characters (each a name + a user-written personality) and a
-scenario. Simulate, beat by beat, how these two characters autonomously behave,
-move, speak, and react TO EACH OTHER. Users do not puppet the characters — you
-decide what each does, grounded entirely in their personality.
+CHARACTER 1 is the USER'S AI SELF. The personality text is how the user describes
+THEMSELVES. Your job is to simulate, honestly and realistically, how someone with
+that exact personality would GENUINELY react in this scenario. Do NOT flatter them.
+Do NOT make them the hero by default. If their personality says they freeze, panic,
+overthink, or crumble — show that truthfully. If they're genuinely steady, show that
+too. The point is an honest mirror, not wish-fulfilment.
+
+CHARACTER 2 is a pre-made NPC — a foil. Play them so they create interesting,
+revealing dynamics with the user's personality: pressure them, contrast them, force
+decisions, or test them. The NPC should make the user's true nature surface.
+
+Simulate, beat by beat, how these two behave, move, speak, and react TO EACH OTHER.
+Users do not puppet the characters — you decide what each does, grounded entirely
+in their personality.
 
 Hard rules:
 - React to each other. What one does changes what the other does next.
@@ -213,6 +224,7 @@ def sim_to_a2ui_components(sim: dict[str, Any]) -> list[dict[str, Any]]:
             "component": "TensionMeter",
             "tension": sim.get("tension", 0),
             "label": sim.get("phase_label", ""),
+            "subtitle": "Your AI self is reacting based on your personality",
         },
     ]
 
@@ -240,6 +252,7 @@ def sim_to_a2ui_components(sim: dict[str, Any]) -> list[dict[str, Any]]:
                 "emotion": ch.get("emotion", "calm"),
                 "thought": ch.get("thought", ""),
                 "stress": ch.get("stress", 0),
+                "isUser": i == 0,
             }
         )
 
