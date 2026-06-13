@@ -15,6 +15,7 @@ import {
   type StageState,
 } from "@/a2ui/surface-bus";
 import type { Scenario } from "@/components/CharacterStage";
+import { DemoHud, type DemoHudData } from "@/components/DemoHud";
 
 const CharacterStage = dynamic(() => import("@/components/CharacterStage"), {
   ssr: false,
@@ -180,6 +181,9 @@ function SimulateCanvasInner({
   beatNumber,
   running,
   onNextBeat,
+  demoStage,
+  demoHud,
+  nextLabel,
 }: {
   channel: string;
   started: boolean;
@@ -187,11 +191,14 @@ function SimulateCanvasInner({
   beatNumber: number;
   running: boolean;
   onNextBeat: () => void;
+  demoStage?: StageState;
+  demoHud?: DemoHudData | null;
+  nextLabel?: string;
 }) {
   const stageState = useStageState(channel);
   const scenario = useSimScenario(channel, setup?.scenario);
   const effectiveStage =
-    stageState ?? (started && setup ? neutralStage(setup) : undefined);
+    demoStage ?? stageState ?? (started && setup ? neutralStage(setup) : undefined);
   const [hasSurface, setHasSurface] = useState(
     () => !!surfaceBus.snapshot(channel).surfaceId,
   );
@@ -203,22 +210,24 @@ function SimulateCanvasInner({
   }, [channel]);
 
   return (
-    <div className="relative h-full w-full min-h-0 overflow-hidden bg-[#0a0a12]">
+    <div className="relative h-full w-full min-h-0 overflow-hidden bg-[#14100b]">
       <div className="absolute inset-0 z-0 min-h-[300px]">
         <CharacterStage stageState={effectiveStage} scenario={scenario} />
       </div>
 
-      {started && !hasSurface && running && (
+      {started && !demoHud && !hasSurface && running && (
         <div className="absolute inset-x-0 top-6 z-10 flex justify-center pointer-events-none">
           <div className="sim-loading-pill">ALTER is directing the scene…</div>
         </div>
       )}
 
-      {started && hasSurface && (
-        <div className="absolute inset-x-0 top-0 z-10 p-4 md:p-5 pointer-events-none">
-          <div className="sim-hud">
+      {started && (demoHud || hasSurface) && (
+        <div className="sim-hud-dock">
+          {demoHud ? (
+            <DemoHud data={demoHud} onPick={onNextBeat} />
+          ) : (
             <A2UIOverlay channel={channel} />
-          </div>
+          )}
         </div>
       )}
 
@@ -229,7 +238,7 @@ function SimulateCanvasInner({
           disabled={running}
           onClick={onNextBeat}
         >
-          {running ? "Simulating…" : `Next Beat (${beatNumber + 1})`}
+          {nextLabel ?? (running ? "Simulating…" : `Next Beat (${beatNumber + 1})`)}
         </button>
       )}
     </div>
@@ -243,6 +252,9 @@ export function SimulateCanvas({
   beatNumber,
   running,
   onNextBeat,
+  demoStage,
+  demoHud,
+  nextLabel,
 }: {
   channel: string;
   started: boolean;
@@ -250,6 +262,9 @@ export function SimulateCanvas({
   beatNumber: number;
   running: boolean;
   onNextBeat: () => void;
+  demoStage?: StageState;
+  demoHud?: DemoHudData | null;
+  nextLabel?: string;
 }) {
   const { agent } = useAgent({ agentId: channel });
 
@@ -276,6 +291,9 @@ export function SimulateCanvas({
           beatNumber={beatNumber}
           running={running}
           onNextBeat={onNextBeat}
+          demoStage={demoStage}
+          demoHud={demoHud}
+          nextLabel={nextLabel}
         />
       </A2UIProvider>
     </div>

@@ -258,15 +258,66 @@
 }
 .sim-setup__begin:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: 2px 2px 0 var(--retro-line); }
 
-/* ── HUD overlay ───────────────────────────────────────────────────────── */
-
-.sim-hud {
-  pointer-events: auto;
-  max-width: 940px;
-  margin: 0 auto;
+/* Secondary "play scripted demo" button */
+.sim-setup__demo {
+  width: 100%;
+  margin-top: 12px;
+  padding: 11px;
+  border-radius: 12px;
+  border: 2px dashed var(--retro-brown);
+  background: transparent;
+  color: var(--retro-brown);
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: 13px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.sim-setup__demo:hover {
+  background: rgba(47, 143, 129, 0.12);
+  border-color: var(--retro-teal);
+  color: var(--retro-teal);
 }
 
-.sim-hud .a2ui-surface {
+/* "Scripted demo" badge shown during demo playback */
+.sim-demo-badge {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  z-index: 20;
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 2px solid var(--retro-line);
+  background: var(--retro-gold);
+  color: var(--retro-ink);
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  box-shadow: 3px 3px 0 var(--retro-line);
+  pointer-events: none;
+}
+
+/* ── HUD overlay ───────────────────────────────────────────────────────── */
+
+/* HUD docked compact in the lower-right so it never covers the stage. */
+.sim-hud-dock {
+  position: absolute;
+  right: 16px;
+  bottom: 84px;
+  width: 350px;
+  max-width: calc(100vw - 32px);
+  max-height: 58vh;
+  overflow-y: auto;
+  z-index: 12;
+  pointer-events: auto;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.sim-hud-dock::-webkit-scrollbar { display: none; }
+
+.sim-hud-dock .a2ui-surface {
   border: none !important;
   background: transparent !important;
   backdrop-filter: none !important;
@@ -275,11 +326,35 @@
 }
 
 .sim-hud-panel {
-  border-radius: 18px;
+  border-radius: 16px;
   border: 2px solid var(--retro-line);
-  background: rgba(244, 231, 205, 0.94);
-  padding: 14px 18px;
-  box-shadow: 5px 5px 0 rgba(58, 40, 23, 0.6);
+  background: rgba(244, 231, 205, 0.96);
+  padding: 12px 14px;
+  box-shadow: 4px 4px 0 rgba(58, 40, 23, 0.6);
+}
+
+/* Compact the cards when docked */
+.sim-hud-dock .alt-tension,
+.sim-hud-dock .alt-beat,
+.sim-hud-dock .alt-psyche,
+.sim-hud-dock .alt-fork { margin: 6px 0; }
+.sim-hud-dock .alt-beat,
+.sim-hud-dock .alt-psyche,
+.sim-hud-dock .alt-fork { padding: 11px 13px; }
+.sim-hud-dock .alt-beat__headline { font-size: 14px; }
+.sim-hud-dock .alt-beat__detail,
+.sim-hud-dock .alt-psyche__thought { font-size: 12.5px; }
+.sim-hud-dock .alt-psyche__name { font-size: 14px; }
+
+@media (max-width: 560px) {
+  .sim-hud-dock {
+    left: 10px;
+    right: 10px;
+    width: auto;
+    max-width: none;
+    bottom: 74px;
+    max-height: 42vh;
+  }
 }
 
 /* ── Retro skin for the A2UI HUD components (scoped to the sim only) ────── */

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { UseAgentUpdate, useAgent } from "@copilotkit/react-core/v2";
 import {
   SimulateCanvas,
@@ -10,7 +10,9 @@ import {
 } from "@/components/SimulateCanvas";
 import { surfaceBus } from "@/a2ui/surface-bus";
 import { useSurfaceBusSync } from "@/a2ui/use-surface-bus-sync";
-import type { SimScenario } from "@/a2ui/surface-bus";
+import type { SimScenario, StageState } from "@/a2ui/surface-bus";
+import { DEMO_SCRIPTS, type DemoBeat } from "./demo-scripts";
+import type { DemoHudData } from "@/components/DemoHud";
 import "./simulate.css";
 
 const AGENT_ID = "simulate_agent";
@@ -87,6 +89,32 @@ const DEFAULT_SETUP: SimSetup = {
   scenario: DEFAULT_SCENARIO.key,
 };
 
+/** Convert a scripted demo beat into the StageState the 3D stage consumes. */
+function demoToStage(
+  beat: DemoBeat,
+  youName: string,
+  npcName: string,
+  beatNumber: number,
+): StageState {
+  const names = [youName, npcName];
+  return {
+    tension: beat.tension,
+    beatNumber,
+    characters: beat.chars.map((c, i) => ({
+      name: names[i],
+      animation: c.animation,
+      emotion: c.emotion,
+      intensity: c.stress / 100,
+      dialogue: c.dialogue,
+      x: c.x,
+      z: c.z,
+      facing: c.facing,
+    })),
+  };
+}
+
+const DEMO_BEAT_MS = 6000;
+
 export default function SimulatePage() {
   const { agent } = useAgent({
     agentId: AGENT_ID,
@@ -105,9 +133,23 @@ export default function SimulatePage() {
   const [autoPlay, setAutoPlay] = useState(false);
   const [autoTimer, setAutoTimer] = useState<ReturnType<typeof setInterval> | null>(null);
 
+  // Scripted demo mode — plays canned beats with no LLM calls (for recording).
+  const [demoMode, setDemoMode] = useState(false);
+  const [demoIndex, setDemoIndex] = useState(0);
+  const [demoPaused, setDemoPaused] = useState(false);
+
   const running = agent.isRunning;
   const activeScenario =
     SCENARIOS.find((s) => s.key === setup.scenario) ?? DEFAULT_SCENARIO;
+
+  // Auto-advance the scripted demo, holding on the final beat.
+  useEffect(() => {
+    if (!demoMode || demoPaused) return;
+    const script = DEMO_SCRIPTS[setup.scenario];
+    if (demoIndex >= script.length - 1) return;
+    const t = setTimeout(() => setDemoIndex((i) => i + 1), DEMO_BEAT_MS);
+    return () => clearTimeout(t);
+  }, [demoMode, demoPaused, demoIndex, setup.scenario]);
 
   const runAgent = useCallback(
     async (message: string) => {
@@ -142,12 +184,27 @@ export default function SimulatePage() {
     await runAgent(buildStartMessage(setup));
   }, [setup, runAgent]);
 
+  const handleStartDemo = useCallback(() => {
+    surfaceBus.reset(AGENT_ID);
+    setError(null);
+    setDemoIndex(0);
+    setDemoPaused(false);
+    setDemoMode(true);
+    setStarted(true);
+  }, []);
+
   const handleNextBeat = useCallback(async () => {
+    if (demoMode) {
+      const script = DEMO_SCRIPTS[setup.scenario];
+      // Advance, or loop back to the start once past the final beat.
+      setDemoIndex((i) => (i >= script.length - 1 ? 0 : i + 1));
+      return;
+    }
     if (!setup || running) return;
     const next = beatNumber + 1;
     await runAgent(buildNextBeatMessage(setup, next));
     setBeatNumber(next);
-  }, [setup, beatNumber, running, runAgent]);
+  }, [demoMode, setup, beatNumber, running, runAgent]);
 
   const toggleAutoPlay = useCallback(() => {
     if (autoPlay) {
@@ -175,6 +232,25 @@ export default function SimulatePage() {
     }));
   };
 
+  // ── Derive the scripted-demo stage + HUD for the current beat ──
+  const demoScript = demoMode ? DEMO_SCRIPTS[setup.scenario] : null;
+  const demoBeat: DemoBeat | null = demoScript
+    ? demoScript[Math.min(demoIndex, demoScript.length - 1)]
+    : null;
+  const youName = setup.c1Name.trim() || "You";
+  const demoStage = demoBeat
+    ? demoToStage(demoBeat, youName, setup.c2Name, demoIndex + 1)
+    : undefined;
+  const demoHud: DemoHudData | null = demoBeat
+    ? { beat: demoBeat, beatNumber: demoIndex + 1, youName, npcName: setup.c2Name }
+    : null;
+  const demoAtEnd = !!demoScript && demoIndex >= demoScript.length - 1;
+  const nextLabel = demoMode
+    ? demoAtEnd
+      ? "↻ Replay demo"
+      : `Next Beat (${demoIndex + 2})`
+    : undefined;
+
   return (
     <div className="sim-root">
       <div className="sim-stage">
@@ -185,6 +261,9 @@ export default function SimulatePage() {
           beatNumber={beatNumber}
           running={running}
           onNextBeat={handleNextBeat}
+          demoStage={demoStage}
+          demoHud={demoHud}
+          nextLabel={nextLabel}
         />
       </div>
 
@@ -198,7 +277,18 @@ export default function SimulatePage() {
         </div>
       )}
 
-      {started && !running && (
+      {started && demoMode && (
+        <button
+          type="button"
+          className={`sim-autoplay-btn${!demoPaused ? " sim-autoplay-btn--active" : ""}`}
+          onClick={() => setDemoPaused((p) => !p)}
+          title={demoPaused ? "Resume demo" : "Pause demo"}
+        >
+          {demoPaused ? "▶ Play" : "⏸ Pause"}
+        </button>
+      )}
+
+      {started && !demoMode && !running && (
         <button
           type="button"
           className={`sim-autoplay-btn${autoPlay ? " sim-autoplay-btn--active" : ""}`}
@@ -207,6 +297,10 @@ export default function SimulatePage() {
         >
           {autoPlay ? "⏸ Auto" : "▶ Auto"}
         </button>
+      )}
+
+      {started && demoMode && (
+        <div className="sim-demo-badge">▶ Scripted demo</div>
       )}
 
       {!started && (
@@ -271,6 +365,15 @@ export default function SimulatePage() {
               onClick={() => void handleBegin()}
             >
               {running ? "Starting…" : "Drop me in"}
+            </button>
+
+            <button
+              type="button"
+              className="sim-setup__demo"
+              onClick={handleStartDemo}
+              title="Play a pre-scripted run of this scenario — no AI or API key needed"
+            >
+              ▶ Play scripted demo · no AI needed
             </button>
           </div>
         </div>
