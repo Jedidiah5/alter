@@ -73,3 +73,30 @@ component must have `id: "root"`.
 5. Buttons must include an `action`. Action format:
    "action": { "event": { "name": "approve_plan", "context": { ... } } }
 """
+
+ALTER_CATALOG_SUMMARY = """
+Available custom UI components you may emit (componentType + props):
+
+- CharacterPsycheCard: one character's live internal state.
+    props: characterName (str), emotion (str), thought (str), stress (int 0-100)
+    Emit one per character each beat, when their psychological state shifts.
+
+- TensionMeter: overall scene tension gauge.
+    props: tension (int 0-100), label (str, short phase name)
+    Emit/update every beat so the UI escalates visibly.
+
+- ScenarioBeat: narrative callout of what just happened.
+    props: beatNumber (int), headline (str), detail (str),
+           outcome (escalation|de_escalation|turning_point|resolution|neutral)
+    Emit one per beat.
+
+- DecisionFork: 2-3 branching choices for the user to steer the sim.
+    props: prompt (str), options (array of {id, label, consequence})
+    Emit only at genuine turning points.
+
+- FactInjection: a real-world fact (from Linkup web search) grounding behaviour.
+    props: sourceLabel (str), fact (str), appliedBy (str)
+    Emit when a character acts on real knowledge (e.g. an emergency protocol).
+"""
+
+CATALOG_PROMPT = CATALOG_PROMPT + ALTER_CATALOG_SUMMARY

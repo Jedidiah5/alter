@@ -263,6 +263,80 @@ export const definitions = {
       multi: z.boolean().optional(),
     }),
   },
+
+  /* ALTER — character simulation surfaces */
+  CharacterPsycheCard: {
+    description:
+      "Shows a single character's live internal state during a scenario: current emotion, private thought, and stress level. Emit one per character when their psychological state shifts.",
+    props: z.object({
+      characterName: z.string(),
+      emotion: z.enum([
+        "panicking",
+        "calm",
+        "aggressive",
+        "frozen",
+        "heroic",
+        "nervous",
+        "determined",
+      ]),
+      thought: z.string(),
+      stress: z.number().min(0).max(100),
+      accentColor: z.string().optional(),
+    }),
+  },
+
+  TensionMeter: {
+    description:
+      "Live gauge of overall scene tension 0-100. Emit/update every beat so the UI escalates with the scenario.",
+    props: z.object({
+      tension: z.number().min(0).max(100),
+      label: z.string().optional(),
+    }),
+  },
+
+  ScenarioBeat: {
+    description:
+      "Narrative callout describing what just physically happened this beat. Emit one per beat.",
+    props: z.object({
+      beatNumber: z.number().int(),
+      headline: z.string(),
+      detail: z.string(),
+      outcome: z
+        .enum([
+          "escalation",
+          "de_escalation",
+          "turning_point",
+          "resolution",
+          "neutral",
+        ])
+        .optional(),
+    }),
+  },
+
+  DecisionFork: {
+    description:
+      "2-3 branching choices for how the scenario could continue. Emit at key turning points.",
+    props: z.object({
+      prompt: z.string(),
+      options: z.array(
+        z.object({
+          id: z.string(),
+          label: z.string(),
+          consequence: z.string().optional(),
+        }),
+      ),
+    }),
+  },
+
+  FactInjection: {
+    description:
+      "Real-world fact (e.g. from web search) grounding a character's behaviour. Emit when a character acts on real knowledge.",
+    props: z.object({
+      sourceLabel: z.string(),
+      fact: z.string(),
+      appliedBy: z.string().optional(),
+    }),
+  },
 };
 
 export type Definitions = typeof definitions;

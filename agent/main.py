@@ -1,7 +1,8 @@
-"""FastAPI server exposing two AG-UI agents:
+"""FastAPI server exposing AG-UI agents:
 
-  POST /fixed/   . multi-step launch wizard using fixed A2UI schemas
-  POST /dynamic/ . dynamic A2UI surfaces generated at runtime
+  POST /fixed/    . multi-step launch wizard using fixed A2UI schemas
+  POST /dynamic/  . dynamic A2UI surfaces generated at runtime
+  POST /simulate/ . ALTER character crisis simulation
 
 Run with:  uvicorn main:app --port 8123 --reload
 """
@@ -27,6 +28,7 @@ from src.multimodal_middleware import install as _install_doc_inlining  # noqa: 
 
 _install_doc_inlining()
 
+from src.character_sim import graph as simulate_graph  # noqa: E402
 from src.dynamic_agent import graph as dynamic_graph  # noqa: E402
 from src.fixed_agent import graph as fixed_graph  # noqa: E402
 
@@ -68,6 +70,17 @@ add_langgraph_fastapi_endpoint(
     path="/dynamic",
 )
 
+add_langgraph_fastapi_endpoint(
+    app=app,
+    agent=LangGraphAGUIAgent(
+        name="simulate_agent",
+        description="ALTER character crisis simulation with psyche cards and tension meter.",
+        graph=simulate_graph,
+        config=_AGENT_CONFIG,
+    ),
+    path="/simulate",
+)
+
 
 @app.get("/")
 def root():
@@ -76,6 +89,7 @@ def root():
         "agents": {
             "fixed_agent": "/fixed/",
             "dynamic_agent": "/dynamic/",
+            "simulate_agent": "/simulate/",
         },
     }
 

@@ -1,0 +1,146 @@
+/* ALTER — custom A2UI component styles (namespaced alt-) */
+
+.alt-psyche {
+  --alt-accent: #4dd2ff;
+  background: rgba(18, 18, 26, 0.9);
+  border: 1px solid #26263a;
+  border-left: 4px solid var(--alt-accent);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin: 8px 0;
+  backdrop-filter: blur(10px);
+}
+.alt-psyche__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 8px;
+}
+.alt-psyche__name { font-weight: 800; font-size: 15px; }
+.alt-psyche__emotion {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--alt-accent);
+}
+.alt-psyche__thought {
+  font-style: italic;
+  opacity: 0.85;
+  font-size: 14px;
+  margin: 0 0 10px;
+}
+.alt-psyche__stress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10px;
+  letter-spacing: 1px;
+  opacity: 0.7;
+}
+.alt-psyche__bar {
+  flex: 1;
+  height: 6px;
+  background: #26263a;
+  border-radius: 3px;
+  overflow: hidden;
+}
+.alt-psyche__fill {
+  height: 100%;
+  background: var(--alt-accent);
+  box-shadow: 0 0 10px var(--alt-accent);
+  transition: width 0.5s ease;
+}
+
+.alt-tension {
+  --alt-accent: #3bd1ff;
+  margin: 8px 0;
+}
+.alt-tension__top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 11px;
+  letter-spacing: 2px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.alt-tension__label { opacity: 0.7; text-transform: uppercase; }
+.alt-tension__val { margin-left: auto; color: var(--alt-accent); }
+.alt-tension__track {
+  height: 8px;
+  background: #26263a;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.alt-tension__fill {
+  height: 100%;
+  background: var(--alt-accent);
+  box-shadow: 0 0 14px var(--alt-accent);
+  transition: width 0.6s ease, background 0.6s ease;
+}
+
+.alt-beat {
+  background: rgba(18, 18, 26, 0.9);
+  border: 1px solid #26263a;
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin: 8px 0;
+}
+.alt-beat__num {
+  font-size: 10px;
+  letter-spacing: 2px;
+  opacity: 0.5;
+  margin-bottom: 6px;
+}
+.alt-beat__headline { font-weight: 700; font-size: 16px; margin-bottom: 4px; }
+.alt-beat__detail { font-size: 14px; opacity: 0.8; }
+.alt-beat__tag {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: #26263a;
+}
+.alt-beat--escalation { border-left: 4px solid #ff4d4d; }
+.alt-beat--de_escalation { border-left: 4px solid #4dff88; }
+.alt-beat--turning_point { border-left: 4px solid #ffd24d; }
+.alt-beat--resolution { border-left: 4px solid #4dd2ff; }
+.alt-beat--neutral { border-left: 4px solid #26263a; }
+
+.alt-fork {
+  background: rgba(18, 18, 26, 0.9);
+  border: 1px dashed #4dabf7;
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin: 8px 0;
+}
+.alt-fork__prompt { font-weight: 700; font-size: 15px; margin-bottom: 10px; }
+.alt-fork__options { display: flex; flex-direction: column; gap: 8px; }
+.alt-fork__opt {
+  text-align: left;
+  background: #14141c;
+  border: 1px solid #26263a;
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: #fff;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+.alt-fork__opt:hover { border-color: #4dabf7; }
+.alt-fork__label { display: block; font-weight: 600; font-size: 14px; }
+.alt-fork__consequence { display: block; font-size: 12px; opacity: 0.6; margin-top: 2px; }
+
+.alt-fact {
+  background: rgba(20, 26, 18, 0.9);
+  border: 1px solid #2a3a26;
+  border-left: 4px solid #4dff88;
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin: 8px 0;
+}
+.alt-fact__src { font-size: 11px; letter-spacing: 1px; opacity: 0.7; margin-bottom: 4px; }
+.alt-fact__body { font-size: 14px; }
+.alt-fact__by { font-size: 11px; opacity: 0.55; margin-top: 4px; }

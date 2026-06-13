@@ -9,8 +9,12 @@ const FIXED_AGENT_URL =
 const DYNAMIC_AGENT_URL =
   process.env.DYNAMIC_AGENT_URL ?? "http://localhost:8123/dynamic";
 
+const SIMULATE_AGENT_URL =
+  process.env.SIMULATE_AGENT_URL ?? "http://localhost:8123/simulate";
+
 const fixedAgent = new HttpAgent({ url: FIXED_AGENT_URL });
 const dynamicAgent = new HttpAgent({ url: DYNAMIC_AGENT_URL });
+const simulateAgent = new HttpAgent({ url: SIMULATE_AGENT_URL });
 
 const runtime = new CopilotRuntime({
   agents: {
@@ -20,6 +24,7 @@ const runtime = new CopilotRuntime({
     default: fixedAgent,
     fixed_agent: fixedAgent,
     dynamic_agent: dynamicAgent,
+    simulate_agent: simulateAgent,
   },
   // The A2UI middleware intercepts tool results that contain a2ui_operations
   // and turns them into rendered surfaces. We deliberately set

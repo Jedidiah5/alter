@@ -12,6 +12,7 @@ import { createMirrorActivityRenderer } from "@/a2ui/MirrorRenderer";
 const RENDERERS = [
   createMirrorActivityRenderer("fixed_agent"),
   createMirrorActivityRenderer("dynamic_agent"),
+  createMirrorActivityRenderer("simulate_agent"),
 ];
 
 export function Providers({ children }: { children: React.ReactNode }) {

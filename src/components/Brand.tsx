@@ -17,12 +17,13 @@ export function Logo({ size = 22 }: { size?: number }) {
 export function SiteNav({
   active,
 }: {
-  active?: "home" | "fixed" | "dynamic" | "catalog";
+  active?: "home" | "fixed" | "dynamic" | "simulate" | "catalog";
 }) {
   const links: Array<{ href: string; label: string; key: typeof active }> = [
     { href: "/", label: "Overview", key: "home" },
     { href: "/fixed", label: "Fixed schema", key: "fixed" },
     { href: "/dynamic", label: "Dynamic schema", key: "dynamic" },
+    { href: "/simulate", label: "Simulate", key: "simulate" },
     { href: "/catalog", label: "Catalog", key: "catalog" },
   ];
   return (
