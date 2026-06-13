@@ -25,6 +25,14 @@ const CharacterStage = dynamic(() => import("@/components/CharacterStage"), {
   ),
 });
 
+export type SimSetup = {
+  c1Name: string;
+  c1Personality: string;
+  c2Name: string;
+  c2Personality: string;
+  scenario: SimScenario;
+};
+
 function parseScenarioFromText(text: string): SimScenario | null {
   const t = text.toLowerCase();
   if (
@@ -41,9 +49,18 @@ function parseScenarioFromText(text: string): SimScenario | null {
   return null;
 }
 
-function useSimScenario(channel: string): Scenario {
+function useSimScenario(
+  channel: string,
+  setupScenario?: SimScenario,
+): Scenario {
   const { agent } = useAgent({ agentId: channel });
-  const [scenario, setScenario] = useState<Scenario>("classroom_flood");
+  const [scenario, setScenario] = useState<Scenario>(
+    setupScenario ?? "classroom_flood",
+  );
+
+  useEffect(() => {
+    if (setupScenario) setScenario(setupScenario);
+  }, [setupScenario]);
 
   useEffect(() => {
     const fromBus = surfaceBus.snapshot(channel).scenario;
@@ -139,21 +156,63 @@ function A2UIOverlay({ channel }: { channel: string }) {
   if (!surfaceId) return null;
 
   return (
-    <div className="a2ui-surface rounded-xl border border-white/10 bg-black/45 backdrop-blur-md p-4 md:p-5 shadow-2xl">
+    <div className="sim-hud-panel">
       <A2UIRenderer surfaceId={surfaceId} />
     </div>
   );
 }
 
+function fallbackStage(setup: SimSetup, beat: number): StageState {
+  return {
+    tension: 35 + beat * 8,
+    beatNumber: beat,
+    characters: [
+      {
+        name: setup.c1Name,
+        animation: beat === 1 ? "freeze" : "talk",
+        emotion: "nervous",
+        intensity: 0.45,
+        dialogue:
+          beat === 1
+            ? "What's happening? The water — it's already at the desks!"
+            : "We need to move. Now!",
+      },
+      {
+        name: setup.c2Name,
+        animation: "point",
+        emotion: "determined",
+        intensity: 0.25,
+        dialogue:
+          beat === 1
+            ? "Everyone stay calm. Head for the window — I'll help Maya."
+            : "I've got a plan. Follow me.",
+      },
+    ],
+  };
+}
+
 function SimulateCanvasInner({
   channel,
-  emptyState,
+  started,
+  setup,
+  beatNumber,
+  running,
+  onNextBeat,
 }: {
   channel: string;
-  emptyState: React.ReactNode;
+  started: boolean;
+  setup: SimSetup | null;
+  beatNumber: number;
+  running: boolean;
+  onNextBeat: () => void;
 }) {
   const stageState = useStageState(channel);
-  const scenario = useSimScenario(channel);
+  const scenario = useSimScenario(channel, setup?.scenario);
+  const effectiveStage =
+    stageState ??
+    (started && setup && beatNumber > 0
+      ? fallbackStage(setup, beatNumber)
+      : undefined);
   const [hasSurface, setHasSurface] = useState(
     () => !!surfaceBus.snapshot(channel).surfaceId,
   );
@@ -165,55 +224,100 @@ function SimulateCanvasInner({
   }, [channel]);
 
   return (
-    <div className="relative h-full w-full overflow-hidden">
-      <div className="absolute inset-0 z-0">
-        <CharacterStage stageState={stageState} scenario={scenario} />
+    <div className="relative h-full w-full min-h-0 overflow-hidden bg-[#0a0a12]">
+      <div className="absolute inset-0 z-0 min-h-[300px]">
+        <CharacterStage stageState={effectiveStage} scenario={scenario} />
       </div>
 
-      <div className="absolute inset-0 z-10 flex flex-col pointer-events-none">
-        {!hasSurface && (
-          <div className="flex-1 flex items-center justify-center p-8">
-            <div className="rounded-2xl border border-white/10 bg-black/50 backdrop-blur-md px-6 py-5 max-w-md text-center">
-              {emptyState}
-            </div>
+      {started && !hasSurface && running && (
+        <div className="absolute inset-x-0 top-6 z-10 flex justify-center pointer-events-none">
+          <div className="px-4 py-2 rounded-full bg-black/50 text-white/80 text-sm backdrop-blur-md border border-white/10">
+            Generating beat…
           </div>
-        )}
+        </div>
+      )}
 
-        {hasSurface && (
-          <div className="mt-auto max-h-[58%] overflow-y-auto pointer-events-auto p-4 md:p-5">
+      {started && hasSurface && (
+        <div className="absolute inset-x-0 top-0 z-10 p-4 md:p-5 pointer-events-none">
+          <div className="sim-hud">
             <A2UIOverlay channel={channel} />
           </div>
-        )}
-      </div>
+        </div>
+      )}
+
+      {started && (
+        <button
+          type="button"
+          className="sim-next-beat"
+          disabled={running}
+          onClick={onNextBeat}
+        >
+          {running ? "Simulating…" : `Next Beat (${beatNumber + 1})`}
+        </button>
+      )}
     </div>
   );
 }
 
 export function SimulateCanvas({
   channel,
-  emptyState,
+  started,
+  setup,
+  beatNumber,
+  running,
+  onNextBeat,
 }: {
   channel: string;
-  emptyState: React.ReactNode;
+  started: boolean;
+  setup: SimSetup | null;
+  beatNumber: number;
+  running: boolean;
+  onNextBeat: () => void;
 }) {
   const { agent } = useAgent({ agentId: channel });
 
   return (
-    <A2UIProvider
-      catalog={catalog}
-      onAction={(message) => {
-        const ua = message?.userAction;
-        if (ua?.name) {
-          agent.addMessage({
-            id: crypto.randomUUID(),
-            role: "user",
-            content: ua.name,
-          });
-        }
-        void agent.runAgent({ forwardedProps: { a2uiAction: message } });
-      }}
-    >
-      <SimulateCanvasInner channel={channel} emptyState={emptyState} />
-    </A2UIProvider>
+    <div className="h-full w-full">
+      <A2UIProvider
+        catalog={catalog}
+        onAction={(message) => {
+          const ua = message?.userAction;
+          if (ua?.name) {
+            agent.addMessage({
+              id: crypto.randomUUID(),
+              role: "user",
+              content: ua.name,
+            });
+          }
+          void agent.runAgent({ forwardedProps: { a2uiAction: message } });
+        }}
+      >
+        <SimulateCanvasInner
+          channel={channel}
+          started={started}
+          setup={setup}
+          beatNumber={beatNumber}
+          running={running}
+          onNextBeat={onNextBeat}
+        />
+      </A2UIProvider>
+    </div>
+  );
+}
+
+export function buildStartMessage(setup: SimSetup): string {
+  return (
+    `Start simulation beat 1. ` +
+    `Character 1: ${setup.c1Name} — ${setup.c1Personality}. ` +
+    `Character 2: ${setup.c2Name} — ${setup.c2Personality}. ` +
+    `Scenario: ${setup.scenario}.`
+  );
+}
+
+export function buildNextBeatMessage(setup: SimSetup, beat: number): string {
+  return (
+    `Next beat. Beat ${beat}. ` +
+    `Continue with Character 1: ${setup.c1Name}, Character 2: ${setup.c2Name}, ` +
+    `Scenario: ${setup.scenario}.`
   );
 }

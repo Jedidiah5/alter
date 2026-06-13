@@ -115,15 +115,17 @@ def parse_sim(raw: str) -> dict[str, Any]:
 
 
 def sim_to_stage_state(sim: dict[str, Any]) -> dict[str, Any]:
-    """Payload for a future Three.js stage (not wired in Hour 1-2)."""
+    """Payload consumed by the Three.js CharacterStage."""
     return {
         "tension": sim.get("tension", 0),
+        "beatNumber": sim.get("_beat_number", 1),
         "characters": [
             {
                 "name": ch.get("name"),
                 "animation": ch.get("animation", "idle"),
                 "emotion": ch.get("emotion", "calm"),
                 "intensity": ch.get("stress", 0) / 100.0,
+                "dialogue": ch.get("dialogue", ""),
             }
             for ch in sim.get("characters", [])
         ],
@@ -232,17 +234,18 @@ def simulate_beat(
 SYSTEM_PROMPT = f"""\
 You are ALTER, orchestrating a live character crisis simulation.
 
-When the user describes two characters (names + personalities) and asks to start
-(or says "start", "simulate", "begin"), call `simulate_beat` ONCE with their
-details extracted from the message.
+When the user starts a simulation, call `simulate_beat` ONCE with character
+names, personalities, scenario, and beat_number=1 extracted from their message.
 
-Defaults if not specified:
-- Character 1: Maya — anxious teacher who freezes under pressure
-- Character 2: Jordan — calm natural leader
-- Scenario: classroom_flood
+When the user asks for the "next beat" (or "Beat N"), call `simulate_beat` ONCE
+with beat_number set to N (or previous + 1), reusing the same characters and
+scenario from the conversation history.
 
-After `simulate_beat` returns, give a brief 1-2 sentence chat summary of what
-unfolded. Do NOT call simulate_beat twice in one turn.
+Always pass beat_number explicitly. Reuse character names/personalities and
+scenario from earlier turns — do not reset unless the user asks.
+
+After `simulate_beat` returns, reply with an empty string or at most one short
+sentence. Do NOT call simulate_beat twice in one turn.
 
 {CATALOG_PROMPT}
 """

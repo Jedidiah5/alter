@@ -1,0 +1,249 @@
+/* Fullscreen simulate experience */
+
+.sim-root {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: #0a0a12;
+}
+
+.sim-stage {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.sim-hidden-chat {
+  position: fixed;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* Setup overlay */
+.sim-setup {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(6, 8, 16, 0.92);
+  backdrop-filter: blur(12px);
+  padding: 24px;
+}
+
+.sim-setup__card {
+  width: 100%;
+  max-width: 480px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(18, 20, 32, 0.95);
+  padding: 28px 32px;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
+}
+
+.sim-setup__title {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin: 0 0 6px;
+  color: #fff;
+}
+
+.sim-setup__sub {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.55);
+  margin: 0 0 24px;
+}
+
+.sim-setup__label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.45);
+  margin-bottom: 6px;
+}
+
+.sim-setup__field {
+  margin-bottom: 16px;
+}
+
+.sim-setup__input {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.35);
+  color: #fff;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.sim-setup__input:focus {
+  border-color: rgba(77, 210, 255, 0.5);
+}
+
+.sim-setup__input::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.sim-setup__scenarios {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.sim-setup__scenario {
+  flex: 1;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.25);
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.sim-setup__scenario:hover {
+  border-color: rgba(255, 255, 255, 0.25);
+  color: #fff;
+}
+
+.sim-setup__scenario--active {
+  border-color: #4dd2ff;
+  background: rgba(77, 210, 255, 0.12);
+  color: #4dd2ff;
+  box-shadow: 0 0 20px rgba(77, 210, 255, 0.15);
+}
+
+.sim-setup__begin {
+  width: 100%;
+  padding: 14px;
+  border-radius: 12px;
+  border: none;
+  background: linear-gradient(135deg, #4dd2ff, #4dabf7);
+  color: #0a0a12;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+}
+
+.sim-setup__begin:hover:not(:disabled) {
+  opacity: 0.92;
+  transform: translateY(-1px);
+}
+
+.sim-setup__begin:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* HUD overlay */
+.sim-hud {
+  pointer-events: auto;
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.sim-hud .a2ui-surface {
+  border: none !important;
+  background: transparent !important;
+  backdrop-filter: none !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+}
+
+.sim-hud-panel {
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.42);
+  backdrop-filter: blur(14px);
+  padding: 14px 18px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+}
+
+/* Next beat control */
+.sim-next-beat {
+  position: absolute;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  padding: 12px 28px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(10px);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  pointer-events: auto;
+}
+
+.sim-next-beat:hover:not(:disabled) {
+  background: rgba(77, 210, 255, 0.2);
+  border-color: rgba(77, 210, 255, 0.45);
+  color: #4dd2ff;
+}
+
+.sim-next-beat:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Speech bubbles (Html overlay in 3D) */
+.sim-speech-bubble {
+  background: rgba(12, 14, 22, 0.82);
+  color: #fff;
+  padding: 10px 14px;
+  border-radius: 14px;
+  max-width: 240px;
+  font-size: 13px;
+  line-height: 1.4;
+  position: relative;
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
+  transition: opacity 0.6s ease;
+  pointer-events: none;
+  user-select: none;
+}
+
+.sim-speech-bubble::after {
+  content: "";
+  position: absolute;
+  bottom: -9px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 9px solid transparent;
+  border-right: 9px solid transparent;
+  border-top: 9px solid rgba(12, 14, 22, 0.82);
+}
+
+.sim-speech-bubble__name {
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.7;
+  margin-bottom: 4px;
+}
+
+.sim-speech-bubble__line {
+  margin: 0;
+}

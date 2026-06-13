@@ -1,73 +1,214 @@
 "use client";
 
-import { CopilotChat, useAgent } from "@copilotkit/react-core/v2";
-import { SiteNav } from "@/components/Brand";
-import { SimulateCanvas } from "@/components/SimulateCanvas";
-import { FilteredUserMessage } from "@/components/FilteredUserMessage";
-import { FilteredAssistantMessage } from "@/components/FilteredAssistantMessage";
-import { Split } from "@/components/Split";
+import { useCallback, useState } from "react";
+import { UseAgentUpdate, useAgent } from "@copilotkit/react-core/v2";
+import {
+  SimulateCanvas,
+  buildNextBeatMessage,
+  buildStartMessage,
+  type SimSetup,
+} from "@/components/SimulateCanvas";
+import { surfaceBus } from "@/a2ui/surface-bus";
+import { useSurfaceBusSync } from "@/a2ui/use-surface-bus-sync";
+import type { SimScenario } from "@/a2ui/surface-bus";
+import "./simulate.css";
 
 const AGENT_ID = "simulate_agent";
 
+const DEFAULT_SETUP: SimSetup = {
+  c1Name: "Maya",
+  c1Personality: "An anxious teacher who freezes under pressure",
+  c2Name: "Jordan",
+  c2Personality: "A calm natural leader",
+  scenario: "classroom_flood",
+};
+
 export default function SimulatePage() {
-  useAgent({ agentId: AGENT_ID });
+  const { agent } = useAgent({
+    agentId: AGENT_ID,
+    updates: [
+      UseAgentUpdate.OnMessagesChanged,
+      UseAgentUpdate.OnRunStatusChanged,
+    ],
+  });
+
+  useSurfaceBusSync(AGENT_ID);
+
+  const [started, setStarted] = useState(false);
+  const [beatNumber, setBeatNumber] = useState(0);
+  const [setup, setSetup] = useState<SimSetup>(DEFAULT_SETUP);
+  const [error, setError] = useState<string | null>(null);
+
+  const running = agent.isRunning;
+
+  const runAgent = useCallback(
+    async (message: string) => {
+      setError(null);
+      agent.addMessage({
+        id: crypto.randomUUID(),
+        role: "user",
+        content: message,
+      });
+      try {
+        await agent.runAgent();
+      } catch (err) {
+        console.error("[simulate] runAgent failed:", err);
+        const msg = err instanceof Error ? err.message : "Simulation failed";
+        if (msg.includes("429") || msg.toLowerCase().includes("quota")) {
+          setError(
+            "Gemini API quota exceeded. Wait a minute and retry, or update GEMINI_API_KEY in agent/.env.",
+          );
+        } else {
+          setError(msg);
+        }
+      }
+    },
+    [agent],
+  );
+
+  const handleBegin = useCallback(async () => {
+    if (!setup.c1Name.trim() || !setup.c2Name.trim()) return;
+    surfaceBus.reset(AGENT_ID);
+    setStarted(true);
+    setBeatNumber(1);
+    await runAgent(buildStartMessage(setup));
+  }, [setup, runAgent]);
+
+  const handleNextBeat = useCallback(async () => {
+    if (!setup || running) return;
+    const next = beatNumber + 1;
+    await runAgent(buildNextBeatMessage(setup, next));
+    setBeatNumber(next);
+  }, [setup, beatNumber, running, runAgent]);
 
   return (
-    <div className="h-screen flex flex-col bg-[var(--bg)]">
-      <SiteNav active="simulate" />
+    <div className="sim-root">
+      <div className="sim-stage">
+        <SimulateCanvas
+          channel={AGENT_ID}
+          started={started}
+          setup={setup}
+          beatNumber={beatNumber}
+          running={running}
+          onNextBeat={handleNextBeat}
+        />
+      </div>
 
-      <Split
-        persistKey="simulate.split"
-        initialLeftFraction={0.32}
-        left={
-          <div className="h-full flex flex-col copilot-chat-wrapper">
-            <div className="flex-1 min-h-0">
-              <CopilotChat
-                agentId={AGENT_ID}
-                chatView={{
-                  messageView: {
-                    userMessage: FilteredUserMessage,
-                    assistantMessage: FilteredAssistantMessage,
-                  },
-                }}
-                labels={{
-                  chatInputPlaceholder:
-                    "Describe two characters + scenario, then say “start”…",
-                  welcomeMessageText:
-                    "Describe two characters with names and personalities, pick a scenario (classroom flood or robbery), then say “start”. Example: “Maya is an anxious teacher. Jordan is a calm leader. Start the classroom flood scenario.”",
-                }}
+      {error && started && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-lg bg-red-900/80 text-white text-sm border border-red-500/40">
+          {error}
+        </div>
+      )}
+
+      {!started && (
+        <div className="sim-setup">
+          <div className="sim-setup__card">
+            <h1 className="sim-setup__title">ALTER Simulation</h1>
+            <p className="sim-setup__sub">
+              Configure two characters and pick a scenario to begin.
+            </p>
+
+            <div className="sim-setup__field">
+              <label className="sim-setup__label" htmlFor="c1-name">
+                Character 1 — Name
+              </label>
+              <input
+                id="c1-name"
+                className="sim-setup__input"
+                value={setup.c1Name}
+                onChange={(e) =>
+                  setSetup((s) => ({ ...s, c1Name: e.target.value }))
+                }
+                placeholder="Maya"
               />
             </div>
+            <div className="sim-setup__field">
+              <label className="sim-setup__label" htmlFor="c1-personality">
+                Character 1 — Personality
+              </label>
+              <input
+                id="c1-personality"
+                className="sim-setup__input"
+                value={setup.c1Personality}
+                onChange={(e) =>
+                  setSetup((s) => ({ ...s, c1Personality: e.target.value }))
+                }
+                placeholder="An anxious teacher who freezes under pressure"
+              />
+            </div>
+
+            <div className="sim-setup__field">
+              <label className="sim-setup__label" htmlFor="c2-name">
+                Character 2 — Name
+              </label>
+              <input
+                id="c2-name"
+                className="sim-setup__input"
+                value={setup.c2Name}
+                onChange={(e) =>
+                  setSetup((s) => ({ ...s, c2Name: e.target.value }))
+                }
+                placeholder="Jordan"
+              />
+            </div>
+            <div className="sim-setup__field">
+              <label className="sim-setup__label" htmlFor="c2-personality">
+                Character 2 — Personality
+              </label>
+              <input
+                id="c2-personality"
+                className="sim-setup__input"
+                value={setup.c2Personality}
+                onChange={(e) =>
+                  setSetup((s) => ({ ...s, c2Personality: e.target.value }))
+                }
+                placeholder="A calm natural leader"
+              />
+            </div>
+
+            <span className="sim-setup__label">Scenario</span>
+            <div className="sim-setup__scenarios">
+              <button
+                type="button"
+                className={`sim-setup__scenario${setup.scenario === "classroom_flood" ? " sim-setup__scenario--active" : ""}`}
+                onClick={() =>
+                  setSetup((s) => ({
+                    ...s,
+                    scenario: "classroom_flood" as SimScenario,
+                  }))
+                }
+              >
+                Classroom Flood
+              </button>
+              <button
+                type="button"
+                className={`sim-setup__scenario${setup.scenario === "robbery" ? " sim-setup__scenario--active" : ""}`}
+                onClick={() =>
+                  setSetup((s) => ({
+                    ...s,
+                    scenario: "robbery" as SimScenario,
+                  }))
+                }
+              >
+                Robbery
+              </button>
+            </div>
+
+            <button
+              type="button"
+              className="sim-setup__begin"
+              disabled={
+                running ||
+                !setup.c1Name.trim() ||
+                !setup.c2Name.trim()
+              }
+              onClick={() => void handleBegin()}
+            >
+              {running ? "Starting…" : "Begin"}
+            </button>
           </div>
-        }
-        right={
-          <SimulateCanvas
-            channel={AGENT_ID}
-            emptyState={
-              <div className="flex flex-col items-center gap-3 text-white">
-                <div
-                  className="w-12 h-12 rounded-2xl flex items-center justify-center opacity-90"
-                  style={{ background: "linear-gradient(135deg, #4dd2ff, #4dabf7)" }}
-                  aria-hidden
-                >
-                  <span className="text-xl">◎</span>
-                </div>
-                <h2 className="text-[20px] font-semibold tracking-tight">
-                  Simulation stage ready
-                </h2>
-                <p className="text-[14px] text-white/75 leading-relaxed">
-                  Type character names and personalities, then say “start”. The 3D
-                  characters will move while psyche cards and the tension meter
-                  overlay this stage.
-                </p>
-                <span className="mono text-[11px] uppercase tracking-[0.14em] text-white/60 mt-1">
-                  try: “Maya is anxious, Jordan is calm. Start.”
-                </span>
-              </div>
-            }
-          />
-        }
-      />
+        </div>
+      )}
     </div>
   );
 }

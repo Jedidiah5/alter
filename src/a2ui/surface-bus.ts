@@ -13,11 +13,13 @@ export type A2UIOp = Record<string, unknown> & { version?: string };
 
 export type StageState = {
   tension: number;
+  beatNumber?: number;
   characters: Array<{
     name: string;
     animation: string;
     emotion: string;
     intensity: number;
+    dialogue?: string;
   }>;
 };
 
