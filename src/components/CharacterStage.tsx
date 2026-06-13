@@ -25,6 +25,11 @@ export interface StageCharacter {
   emotion: string;
   intensity: number;
   dialogue?: string;
+  /** AI-chosen target position on the stage. */
+  x?: number;
+  z?: number;
+  /** Who/what the character turns toward. */
+  facing?: string;
 }
 
 export interface StageState {
@@ -70,6 +75,24 @@ function getEmotion(e: string) {
 function getAura(e: string) {
   return EMOTION_AURA[e] ?? EMOTION_AURA.default;
 }
+
+/**
+ * Resting facing angle (radians, rotation about Y). The model faces +z (the
+ * camera) at 0. Positive rotates toward +x. We keep angles partial (~0.6 rad)
+ * so faces stay visible even when characters turn toward each other.
+ */
+function facingAngle(facing: string | undefined, homeX: number): number {
+  const onLeft = homeX < 0;
+  switch (facing) {
+    case "partner": return onLeft ? 0.6 : -0.6;   // turn toward the other character
+    case "away":    return onLeft ? -0.6 : 0.6;
+    case "exit":    return onLeft ? -1.1 : 1.1;    // turn toward their own side
+    case "forward":
+    default:        return 0;                       // face the viewer
+  }
+}
+
+type MotionRef = React.MutableRefObject<{ moving: boolean; speed: number }>;
 
 // ─── Character palettes ───────────────────────────────────────────────────────
 
@@ -230,98 +253,128 @@ function Hair({ style, color }: { style: number; color: string }) {
   }
 }
 
-// ─── Arm (multi-segment with animated rotation) ───────────────────────────────
+// ─── Arm (multi-segment, animates every frame off the clock) ───────────────────
 
 function Arm({
   side,
   shirtColor,
   skinColor,
   animation,
-  intensity,
-  t,
+  motionRef,
 }: {
   side: "left" | "right";
   shirtColor: string;
   skinColor: string;
   animation: string;
-  intensity: number;
-  t: number;
+  motionRef: MotionRef;
 }) {
   const sign = side === "left" ? -1 : 1;
   const x = sign * 0.44;
+  const shoulderRef = useRef<THREE.Group>(null);
+  const elbowRef = useRef<THREE.Group>(null);
 
-  // Compute shoulder and elbow angles based on animation
-  let shoulderX = 0, shoulderZ = sign * 0.28, elbowX = 0;
+  useFrame((state) => {
+    const t = state.clock.elapsedTime;
+    const moving = motionRef.current.moving;
 
-  switch (animation) {
-    case "run":
-      shoulderX = Math.sin(t * 6 * sign) * 0.8;
-      elbowX = Math.abs(Math.sin(t * 6 * sign)) * 0.5;
-      break;
-    case "wave":
-      if (side === "left") {
-        shoulderX = -1.4 + Math.sin(t * 5) * 0.3;
-        elbowX = 0.6 + Math.sin(t * 7) * 0.3;
-      } else {
-        shoulderX = Math.sin(t * 1.5) * 0.04;
+    let shoulderX = 0;
+    let shoulderZ = sign * 0.28;
+    let elbowX = 0.05;
+
+    // While walking/running the arms swing in opposition to the legs,
+    // unless the AI animation explicitly poses the arm (wave/point/hands_up).
+    const poseLocksArm =
+      animation === "wave" || animation === "point" || animation === "hands_up";
+
+    if (moving && !poseLocksArm) {
+      const speed = animation === "run" ? 11 : 7;
+      const amp = animation === "run" ? 0.9 : 0.55;
+      shoulderX = Math.sin(t * speed) * amp * sign;
+      elbowX = 0.25 + Math.abs(Math.sin(t * speed)) * 0.3;
+    } else {
+      switch (animation) {
+        case "run": // running in place (arrived but still "run")
+          shoulderX = Math.sin(t * 11) * 0.9 * sign;
+          elbowX = 0.4;
+          break;
+        case "wave":
+          if (side === "left") {
+            shoulderX = -2.3 + Math.sin(t * 8) * 0.1;
+            shoulderZ = sign * 0.5;
+            elbowX = 0.5 + Math.sin(t * 9) * 0.4;
+          } else {
+            shoulderX = Math.sin(t * 1.5) * 0.05;
+          }
+          break;
+        case "point":
+          if (side === "right") {
+            shoulderX = -1.4;
+            shoulderZ = sign * 0.1;
+            elbowX = 0.0;
+          } else {
+            shoulderX = Math.sin(t * 1.5) * 0.05;
+          }
+          break;
+        case "help":
+          shoulderX = -0.7 + Math.sin(t * 2.5) * 0.25;
+          shoulderZ = sign * 0.18;
+          elbowX = 0.6;
+          break;
+        case "talk":
+          if (side === "right") {
+            shoulderX = -0.4 + Math.sin(t * 3.5) * 0.35;
+            elbowX = 0.5 + Math.sin(t * 3.5) * 0.2;
+          } else {
+            shoulderX = Math.sin(t * 1.5) * 0.05;
+          }
+          break;
+        case "hands_up":
+          shoulderX = -2.6;
+          shoulderZ = sign * 0.45;
+          elbowX = 0.2;
+          break;
+        case "crouch":
+          shoulderX = 0.5;
+          elbowX = 0.5;
+          break;
+        case "sit":
+          shoulderX = 0.55;
+          shoulderZ = sign * 0.08;
+          elbowX = 0.6;
+          break;
+        case "hug_self":
+          shoulderX = 0.3;
+          shoulderZ = sign * -0.55;
+          elbowX = 1.1;
+          break;
+        case "freeze":
+          shoulderX = 0;
+          elbowX = 0.02;
+          break;
+        default: // idle — gentle breathing sway
+          shoulderX = Math.sin(t * 1.5 + sign) * 0.07;
+          elbowX = 0.08 + Math.sin(t * 1.5) * 0.03;
       }
-      break;
-    case "point":
-      if (side === "right") {
-        shoulderX = -0.9;
-        shoulderZ = sign * 0.15;
-        elbowX = -0.2;
-      }
-      break;
-    case "help":
-      shoulderX = -0.6 + Math.sin(t * 2) * 0.2;
-      elbowX = 0.3;
-      shoulderZ = sign * 0.2;
-      break;
-    case "talk":
-      if (side === "right") {
-        shoulderX = -0.3 + Math.sin(t * 3) * 0.3;
-        elbowX = 0.2;
-      }
-      break;
-    case "hands_up":
-      shoulderX = -1.5;
-      elbowX = 0.5;
-      break;
-    case "crouch":
-      shoulderX = 0.3;
-      elbowX = 0.2;
-      break;
-    case "sit":
-      shoulderX = 0.5;
-      elbowX = 0.5;
-      shoulderZ = sign * 0.1;
-      break;
-    case "hug_self":
-      shoulderX = 0.4;
-      shoulderZ = sign * -0.1;
-      elbowX = 0.4;
-      break;
-    default: // idle
-      shoulderX = Math.sin(t * 1.5 + sign) * 0.06;
-      elbowX = 0.05;
-  }
+    }
+
+    if (shoulderRef.current) shoulderRef.current.rotation.set(shoulderX, 0, shoulderZ);
+    if (elbowRef.current) elbowRef.current.rotation.x = elbowX;
+  });
 
   return (
     <group position={[x, 1.12, 0]}>
-      {/* Upper arm */}
-      <group rotation={[shoulderX, 0, shoulderZ]}>
+      <group ref={shoulderRef} rotation={[0, 0, sign * 0.28]}>
+        {/* Upper arm */}
         <mesh position={[0, -0.155, 0]}>
           <cylinderGeometry args={[0.07, 0.065, 0.3, 10]} />
           <meshStandardMaterial color={shirtColor} roughness={0.55} />
         </mesh>
-        {/* Forearm pivot */}
-        <group position={[0, -0.31, 0]} rotation={[elbowX, 0, 0]}>
+        {/* Forearm + hand pivot at elbow */}
+        <group ref={elbowRef} position={[0, -0.31, 0]}>
           <mesh position={[0, -0.12, 0]}>
             <cylinderGeometry args={[0.062, 0.055, 0.25, 10]} />
             <meshStandardMaterial color={skinColor} roughness={0.65} />
           </mesh>
-          {/* Hand */}
           <mesh position={[0, -0.26, 0]}>
             <boxGeometry args={[0.1, 0.09, 0.07]} />
             <meshStandardMaterial color={skinColor} roughness={0.65} />
@@ -335,12 +388,12 @@ function Arm({
 // ─── Humanoid ─────────────────────────────────────────────────────────────────
 
 function Humanoid({
-  position,
+  home,
   palette,
   data,
   beatKey,
 }: {
-  position: [number, number, number];
+  home: [number, number, number];
   palette: (typeof PALETTES)[number];
   data?: StageCharacter;
   beatKey: string;
@@ -349,99 +402,126 @@ function Humanoid({
   const auraRef = useRef<THREE.Mesh>(null);
   const leftLegRef = useRef<THREE.Group>(null);
   const rightLegRef = useRef<THREE.Group>(null);
-  const tRef = useRef(0);
+  // Current ground position — lerps toward the AI-chosen target each frame.
+  const posRef = useRef(new THREE.Vector3(home[0], home[1], 0));
+  const motionRef = useRef({ moving: false, speed: 0 });
 
   const anim = data?.animation ?? "idle";
   const emotion = data?.emotion ?? "calm";
   const intensity = data?.intensity ?? 0.2;
   const auraColor = getAura(emotion);
 
-  useFrame((state) => {
+  useFrame((state, delta) => {
     if (!group.current) return;
     const t = state.clock.elapsedTime;
-    tRef.current = t;
+    const dt = Math.min(delta, 0.05);
     const k = 0.4 + intensity;
 
-    // Body movement
-    switch (anim) {
-      case "run":
-        group.current.position.x = position[0] + Math.sin(t * 5) * 0.55 * k;
-        group.current.rotation.y = Math.cos(t * 5) * 0.25;
-        group.current.rotation.z = Math.sin(t * 5) * 0.07;
-        if (leftLegRef.current) leftLegRef.current.rotation.x = Math.sin(t * 10) * 0.5;
-        if (rightLegRef.current) rightLegRef.current.rotation.x = -Math.sin(t * 10) * 0.5;
-        break;
-      case "freeze":
-        group.current.position.set(position[0], position[1], position[2]);
-        group.current.rotation.set(0, 0, 0);
-        break;
-      case "crouch":
-        group.current.position.y = position[1] - 0.38;
-        break;
-      case "wave":
-      case "point":
-        group.current.rotation.y = Math.sin(t * 2) * 0.12;
-        group.current.position.y = position[1] + Math.sin(t * 1.5) * 0.03;
-        break;
-      case "talk":
-        group.current.position.y = position[1] + Math.abs(Math.sin(t * 6)) * 0.04;
-        group.current.rotation.y = Math.sin(t * 1.2) * 0.08;
-        break;
-      case "help":
-        group.current.position.x = position[0] + Math.sin(t * 2) * 0.18;
-        group.current.rotation.y = Math.sin(t * 2) * 0.15;
-        break;
-      case "hands_up":
-        group.current.position.y = position[1] + Math.sin(t * 8) * 0.04;
-        break;
-      case "sit":
-        group.current.position.y = position[1] - 0.5;
-        break;
-      case "hug_self":
-        group.current.position.y = position[1] + Math.sin(t * 2) * 0.04;
-        group.current.rotation.y = Math.sin(t * 1.5) * 0.06;
-        break;
-      default: // idle
-        group.current.position.y = position[1] + Math.sin(t * 1.5) * 0.04 * k;
-        group.current.rotation.y = Math.sin(t * 0.8) * 0.05;
+    // ── Locomotion: walk toward the AI-chosen target ──
+    const targetX = data?.x ?? home[0];
+    const targetZ = data?.z ?? 0;
+    const cur = posRef.current;
+    const remaining = Math.hypot(targetX - cur.x, targetZ - cur.z);
+    const moving = remaining > 0.05;
+
+    const lambda = anim === "run" ? 4.5 : 2.8;
+    const prevX = cur.x;
+    const prevZ = cur.z;
+    cur.x = THREE.MathUtils.damp(cur.x, targetX, lambda, dt);
+    cur.z = THREE.MathUtils.damp(cur.z, targetZ, lambda, dt);
+    const dx = cur.x - prevX;
+    const dz = cur.z - prevZ;
+    const frameSpeed = Math.hypot(dx, dz);
+    motionRef.current.moving = moving;
+    motionRef.current.speed = frameSpeed;
+
+    // ── Vertical bob / dips (in-place body action) ──
+    let offY = 0;
+    if (moving) {
+      const sp = anim === "run" ? 11 : 7;
+      offY = Math.abs(Math.sin(t * sp)) * (anim === "run" ? 0.09 : 0.05);
+    } else {
+      switch (anim) {
+        case "crouch":  offY = -0.4; break;
+        case "sit":     offY = -0.52; break;
+        case "talk":    offY = Math.abs(Math.sin(t * 6)) * 0.03; break;
+        case "hands_up":offY = Math.sin(t * 8) * 0.03; break;
+        case "run":     offY = Math.abs(Math.sin(t * 11)) * 0.08; break;
+        case "freeze":  offY = 0; break;
+        default:        offY = Math.sin(t * 1.5) * 0.035 * k;
+      }
+    }
+    group.current.position.set(cur.x, home[1] + offY, cur.z);
+
+    // ── Legs: walk cycle while moving; else pose/settle ──
+    if (leftLegRef.current && rightLegRef.current) {
+      if (moving || anim === "run") {
+        const sp = anim === "run" ? 11 : 7;
+        const amp = anim === "run" ? 0.7 : 0.45;
+        leftLegRef.current.rotation.x = Math.sin(t * sp) * amp;
+        rightLegRef.current.rotation.x = -Math.sin(t * sp) * amp;
+      } else if (anim === "sit") {
+        leftLegRef.current.rotation.x = Math.PI * 0.46;
+        rightLegRef.current.rotation.x = Math.PI * 0.46;
+      } else if (anim === "crouch") {
+        leftLegRef.current.rotation.x = 0.55;
+        rightLegRef.current.rotation.x = 0.55;
+      } else {
+        leftLegRef.current.rotation.x = THREE.MathUtils.damp(leftLegRef.current.rotation.x, 0, 8, dt);
+        rightLegRef.current.rotation.x = THREE.MathUtils.damp(rightLegRef.current.rotation.x, 0, 8, dt);
+      }
     }
 
+    // ── Facing: face travel direction while walking, else the AI's facing ──
+    let targetRotY: number;
+    if (moving && frameSpeed > 0.0008) {
+      targetRotY = Math.atan2(dx, dz);
+    } else {
+      targetRotY = facingAngle(data?.facing, home[0]);
+    }
+    group.current.rotation.y = THREE.MathUtils.damp(group.current.rotation.y, targetRotY, 7, dt);
+    // slight running lean
+    group.current.rotation.z = THREE.MathUtils.damp(
+      group.current.rotation.z,
+      moving && anim === "run" ? 0.05 : 0,
+      6,
+      dt,
+    );
+
+    // ── Aura pulse ──
     if (auraRef.current) {
       const mat = auraRef.current.material as THREE.MeshStandardMaterial;
       const pulse = Math.sin(t * 2.5) * 0.5 + 0.5;
       mat.opacity = 0.06 + pulse * 0.1 + intensity * 0.14;
-      const scale = 1 + pulse * 0.07 + intensity * 0.05;
-      auraRef.current.scale.setScalar(scale);
+      auraRef.current.scale.setScalar(1 + pulse * 0.07 + intensity * 0.05);
     }
   });
 
-  const sitting = anim === "sit";
-
   return (
-    <group ref={group} position={position}>
+    <group ref={group} position={[home[0], home[1], 0]}>
       {/* Emotion aura */}
       <mesh ref={auraRef} position={[0, 1.15, 0]}>
         <sphereGeometry args={[1.25, 20, 20]} />
         <meshStandardMaterial color={auraColor} transparent opacity={0.1} emissive={auraColor} emissiveIntensity={0.3} />
       </mesh>
 
-      {/* Legs */}
-      <group ref={leftLegRef} position={[-0.14, sitting ? 0.08 : 0.38, 0]} rotation={sitting ? [Math.PI * 0.45, 0, 0] : [0, 0, 0]}>
-        <mesh>
+      {/* Legs — pivot at the hip so they swing naturally */}
+      <group ref={leftLegRef} position={[-0.14, 0.69, 0]}>
+        <mesh position={[0, -0.31, 0]} castShadow>
           <cylinderGeometry args={[0.09, 0.08, 0.62, 10]} />
           <meshStandardMaterial color={palette.pants} roughness={0.6} />
         </mesh>
-        <mesh position={[-0.0, -0.36, sitting ? 0.3 : 0.04]}>
+        <mesh position={[0, -0.64, 0.04]} castShadow>
           <boxGeometry args={[0.14, 0.1, 0.24]} />
           <meshStandardMaterial color={palette.shoes} roughness={0.7} />
         </mesh>
       </group>
-      <group ref={rightLegRef} position={[0.14, sitting ? 0.08 : 0.38, 0]} rotation={sitting ? [Math.PI * 0.45, 0, 0] : [0, 0, 0]}>
-        <mesh>
+      <group ref={rightLegRef} position={[0.14, 0.69, 0]}>
+        <mesh position={[0, -0.31, 0]} castShadow>
           <cylinderGeometry args={[0.09, 0.08, 0.62, 10]} />
           <meshStandardMaterial color={palette.pants} roughness={0.6} />
         </mesh>
-        <mesh position={[0.0, -0.36, sitting ? 0.3 : 0.04]}>
+        <mesh position={[0, -0.64, 0.04]} castShadow>
           <boxGeometry args={[0.14, 0.1, 0.24]} />
           <meshStandardMaterial color={palette.shoes} roughness={0.7} />
         </mesh>
@@ -459,9 +539,9 @@ function Humanoid({
         <meshStandardMaterial color={palette.shirt} roughness={0.5} />
       </mesh>
 
-      {/* Arms — rendered as separate components so they animate independently */}
-      <Arm side="left"  shirtColor={palette.shirt} skinColor={palette.skin} animation={anim} intensity={intensity} t={tRef.current} />
-      <Arm side="right" shirtColor={palette.shirt} skinColor={palette.skin} animation={anim} intensity={intensity} t={tRef.current} />
+      {/* Arms — self-animating */}
+      <Arm side="left"  shirtColor={palette.shirt} skinColor={palette.skin} animation={anim} motionRef={motionRef} />
+      <Arm side="right" shirtColor={palette.shirt} skinColor={palette.skin} animation={anim} motionRef={motionRef} />
 
       {/* Neck */}
       <mesh position={[0, 1.44, 0]} castShadow>
@@ -1208,15 +1288,15 @@ export default function CharacterStage({
 
         <ContactShadows position={[0, -0.48, 0]} opacity={0.35} scale={14} blur={2.8} far={4} />
 
-        {/* Characters — spaced for each scenario */}
+        {/* Characters — home positions; the AI moves them from here each beat */}
         <Humanoid
-          position={[-1.7, 0, 0]}
+          home={[-1.7, 0, 0]}
           palette={PALETTES[0]}
           data={chars[0]}
           beatKey={`${beatKey}-0`}
         />
         <Humanoid
-          position={[1.7, 0, 0]}
+          home={[1.7, 0, 0]}
           palette={PALETTES[1]}
           data={chars[1]}
           beatKey={`${beatKey}-1`}

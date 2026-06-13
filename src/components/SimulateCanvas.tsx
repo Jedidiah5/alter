@@ -157,31 +157,18 @@ function A2UIOverlay({ channel }: { channel: string }) {
   );
 }
 
-function fallbackStage(setup: SimSetup, beat: number): StageState {
+/**
+ * Resting state shown only while the AI is producing the first beat. The
+ * characters simply stand in the scene at their home spots — NO scripted
+ * dialogue or actions. Everything they say and do comes from the agent.
+ */
+function neutralStage(setup: SimSetup): StageState {
   return {
-    tension: 35 + beat * 8,
-    beatNumber: beat,
+    tension: 0,
+    beatNumber: 0,
     characters: [
-      {
-        name: setup.c1Name,
-        animation: beat === 1 ? "freeze" : "talk",
-        emotion: "nervous",
-        intensity: 0.45,
-        dialogue:
-          beat === 1
-            ? "What's happening? The water — it's already at the desks!"
-            : "We need to move. Now!",
-      },
-      {
-        name: setup.c2Name,
-        animation: "point",
-        emotion: "determined",
-        intensity: 0.25,
-        dialogue:
-          beat === 1
-            ? "Everyone stay calm. Head for the window — I'll help Maya."
-            : "I've got a plan. Follow me.",
-      },
+      { name: setup.c1Name, animation: "idle", emotion: "calm", intensity: 0.15, x: -1.7, z: 0, facing: "partner" },
+      { name: setup.c2Name, animation: "idle", emotion: "calm", intensity: 0.15, x: 1.7, z: 0, facing: "partner" },
     ],
   };
 }
@@ -204,10 +191,7 @@ function SimulateCanvasInner({
   const stageState = useStageState(channel);
   const scenario = useSimScenario(channel, setup?.scenario);
   const effectiveStage =
-    stageState ??
-    (started && setup && beatNumber > 0
-      ? fallbackStage(setup, beatNumber)
-      : undefined);
+    stageState ?? (started && setup ? neutralStage(setup) : undefined);
   const [hasSurface, setHasSurface] = useState(
     () => !!surfaceBus.snapshot(channel).surfaceId,
   );

@@ -37,13 +37,29 @@ Hard rules:
 - Never break character. Begin mid-action — skip preamble.
 - Make the physical detail vivid and specific to the environment.
 
+MOVEMENT — this is critical. The characters are on a 3D stage and MUST physically
+move around it. Every beat, decide where each character goes using "x" and "z":
+  • x = left/right position, float from -3.0 (far left) to 3.0 (far right).
+  • z = depth, float from -1.0 (back, away from viewer) to 1.0 (front, toward viewer).
+Drive movement from behaviour:
+  • Confronting / approaching someone → move your x CLOSE to theirs (close the gap).
+  • Fleeing / cowering / backing away → move toward an edge (x near -3 or 3).
+  • A leader stepping in front to shield someone → move between the other char and the danger.
+  • Reconciling on a date → drift x toward each other. Storming off in an argument → x to an edge.
+Do NOT leave a character at the same x,z two beats in a row unless they are
+literally frozen in place. They start around x=-1.7 and x=1.7.
+Also set "facing": who/what they turn toward — "partner" (the other character),
+"away", "exit", or "forward" (toward the viewer).
+
 EMOTION options (pick the best fit):
   panicking | calm | aggressive | frozen | heroic | nervous | determined |
   embarrassed | amused | sad | hopeful
 
-ANIMATION options (pick the best fit):
+ANIMATION options — the character's in-place body action (movement is handled
+separately by x/z above):
   idle | run | crouch | wave | point | help | freeze | talk |
   hands_up | sit | hug_self
+Use "run" when a character is moving fast/urgently to their new x,z.
 
 You must respond with ONLY a JSON object in this exact shape (no markdown):
 
@@ -60,6 +76,9 @@ You must respond with ONLY a JSON object in this exact shape (no markdown):
       "name": "<char1 name>",
       "emotion": "<one of the EMOTION options above>",
       "animation": "<one of the ANIMATION options above>",
+      "x": <float -3.0 to 3.0: where they move to this beat>,
+      "z": <float -1.0 to 1.0: depth>,
+      "facing": "partner | away | exit | forward",
       "dialogue": "<exactly what they say out loud, or empty string if silent>",
       "thought": "<private inner monologue — what they're really thinking>",
       "stress": <int 0-100>,
@@ -150,8 +169,21 @@ def parse_sim(raw: str) -> dict[str, Any]:
         }
 
 
+def _clamp(v: Any, lo: float, hi: float, default: float) -> float:
+    """Coerce an LLM-supplied number into range, falling back if missing/garbage."""
+    try:
+        return max(lo, min(hi, float(v)))
+    except (TypeError, ValueError):
+        return default
+
+
+# Where each character starts if the model doesn't specify a position.
+HOME_X = (-1.7, 1.7)
+
+
 def sim_to_stage_state(sim: dict[str, Any]) -> dict[str, Any]:
     """Payload consumed by the Three.js CharacterStage."""
+    chars = sim.get("characters", [])
     return {
         "tension": sim.get("tension", 0),
         "beatNumber": sim.get("_beat_number", 1),
@@ -162,8 +194,11 @@ def sim_to_stage_state(sim: dict[str, Any]) -> dict[str, Any]:
                 "emotion": ch.get("emotion", "calm"),
                 "intensity": ch.get("stress", 0) / 100.0,
                 "dialogue": ch.get("dialogue", ""),
+                "x": _clamp(ch.get("x"), -3.0, 3.0, HOME_X[i] if i < len(HOME_X) else 0.0),
+                "z": _clamp(ch.get("z"), -1.0, 1.0, 0.0),
+                "facing": ch.get("facing", "partner"),
             }
-            for ch in sim.get("characters", [])
+            for i, ch in enumerate(chars)
         ],
     }
 

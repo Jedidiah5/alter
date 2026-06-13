@@ -20,6 +20,9 @@ export type StageState = {
     emotion: string;
     intensity: number;
     dialogue?: string;
+    x?: number;
+    z?: number;
+    facing?: string;
   }>;
 };
 
